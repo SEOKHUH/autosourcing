@@ -1,0 +1,80 @@
+.element {
+    width: 800px;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Helvetica, sans-serif;
+}
+
+.element .name {
+    font-size: 32px;
+    font-weight: 600;
+    text-align: center;
+    color: #000000;
+    padding: 28px 24px;
+    margin: 0;
+    letter-spacing: 0;
+    line-height: 1.4;
+}
+
+.element .img,
+.element .div,
+.element .img-2 {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.element .img img,
+.element .div img,
+.element .img-2 img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.info-section {
+    padding: 40px 50px 50px;
+}
+
+.info-title {
+    font-size: 40px;
+    font-weight: 700;
+    text-align: center;
+    color: #000000;
+    margin: 0 0 24px 0;
+    letter-spacing: 0;
+    line-height: normal;
+    font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Helvetica, sans-serif;
+}
+
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.info-table th,
+.info-table td {
+    border: 1px solid #cecece;
+    padding: 12px 16px;
+    font-size: 18px;
+    font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Helvetica, sans-serif;
+    letter-spacing: 0;
+    line-height: normal;
+    height: 48px;
+    vertical-align: middle;
+}
+
+.info-table th {
+    background-color: #f5f5f5;
+    color: #666363;
+    font-weight: 500;
+    text-align: center;
+    width: 120px;
+    white-space: nowrap;
+}
+
+.info-table td {
+    color: #000000;
+    font-weight: 500;
+}

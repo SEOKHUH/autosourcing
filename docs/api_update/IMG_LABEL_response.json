@@ -1,0 +1,20 @@
+[
+    {
+        "s3Link": "QVT/vendor/A01516996/user/100932705/submission/2f3ae824-b875-4a47-9ef0-9dd0ae42236d/source/image/97920569-10.png",
+        "imageName": "97920569-10.png",
+        "optionalItem": "",
+        "metadata": {
+            "originalFileName": "97920569-10.png",
+            "extension": "png",
+            "optionalitem": "",
+            "ismainimage": "false",
+            "width": "1083",
+            "height": "600",
+            "contenttype": "application/octet-stream"
+        },
+        "imageData": null,
+        "imageUrl": "/sr/api/image/get-by-key?key=QVT%2Fvendor%2FA01516996%2Fuser%2F100932705%2Fsubmission%2F2f3ae824-b875-4a47-9ef0-9dd0ae42236d%2Fsource%2Fimage%2F97920569-10.png",
+        "host": "supplier.coupang.com",
+        "mainImage": false
+    }
+]

@@ -1,0 +1,24 @@
+{
+    "docId": 2000473,
+    "categoryId": 9368,
+    "categoryPath": "생활용품>욕실용품>욕실용품/잡화>욕실잡화>욕실디딤대/스탭퍼",
+    "displayCategoryCode": 74196,
+    "jsonDocument": [
+        {
+            "startPage": {
+                "productName": "헤오르 발 디딤대",
+                "categoryPath": "생활용품>욕실용품>욕실용품/잡화>욕실잡화>욕실디딤대/스탭퍼"
+            }
+        }
+    ],
+    "modifiedAt": "2026-05-04T08:10:22.013+00:00",
+    "productName": "헤오르 발 디딤대",
+    "productNoticeNumber": 38,
+    "qvtRequestId": "9d70fb76-ca4b-44cf-9b55-de3687683637",
+    "scope": "Retail_Categorized_Single",
+    "status": "UNFINISHED",
+    "remark": null,
+    "version": 164,
+    "modifiedByDeterministicToken": null,
+    "createdByDeterministicToken": null
+}

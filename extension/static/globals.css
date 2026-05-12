@@ -1,0 +1,62 @@
+/**
+ * globals.css — Extension용 (CDN @import 제거 버전)
+ *
+ * 섹션 10 [필수 수정 4]: MV3 Extension CSP로 외부 CDN @import 차단됨
+ * → manifest.json content_security_policy에서 fonts.googleapis.com 허용 처리
+ * → 이 파일은 CDN @import 대신 manifest의 CSP 허용 하에 UI에서
+ *    <link rel="stylesheet"> 로 직접 로드하는 방식 사용
+ *
+ * 섹션 10 [필수 수정 5]: 한글 폰트 추가 (Inter는 영문 전용)
+ * → Noto Sans KR 추가 (ui/index.html의 <head>에서 Google Fonts link로 로드)
+ */
+
+/* meyer-reset 인라인 (cdnjs 대체) */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+main, menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+article, aside, details, figcaption, figure,
+footer, header, hgroup, main, menu, nav, section { display: block; }
+[hidden] { display: none; }
+body { line-height: 1; }
+ol, ul { list-style: none; }
+blockquote, q { quotes: none; }
+blockquote:before, blockquote:after,
+q:before, q:after { content: ''; content: none; }
+table { border-collapse: collapse; border-spacing: 0; }
+
+/* 공통 */
+* {
+  -webkit-font-smoothing: antialiased;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0px;
+  height: 100%;
+  /* 섹션 10 [필수 수정 5]: Noto Sans KR fallback 추가 (한글 렌더링) */
+  font-family: "Noto Sans KR", "Inter", Helvetica, sans-serif;
+}
+
+button:focus-visible {
+  outline: 2px solid #4a90e2 !important;
+  outline: -webkit-focus-ring-color auto 5px !important;
+}
+
+a { text-decoration: none; }

@@ -1,0 +1,1033 @@
+{
+    "docId": 2000473,
+    "productName": "헤오르 발 디딤대",
+    "categoryPath": "생활용품>욕실용품>욕실용품/잡화>욕실잡화>욕실디딤대/스탭퍼",
+    "categoryId": 9368,
+    "displayCategoryCode": 74196,
+    "jsonDocument": [
+        {
+            "startPage": {
+                "productName": "헤오르 발 디딤대",
+                "categoryPath": "생활용품>욕실용품>욕실용품/잡화>욕실잡화>욕실디딤대/스탭퍼"
+            },
+            "productPage": {
+                "brand": "브랜드 없음",
+                "commonAttributes": {
+                    "exposedAttributes": [
+                        {
+                            "attributeName": "색상",
+                            "attributeValue": "블루"
+                        },
+                        {
+                            "attributeName": "사이즈",
+                            "attributeValue": "one size"
+                        }
+                    ],
+                    "purchasePrice": 5000,
+                    "coupangSalePrice": 8900,
+                    "productBarcode": "바코드 없음(쿠팡 바코드 생성 요청)"
+                },
+                "manufacturer": "헤오르 협력사",
+                "businessType": "기타 도소매업자",
+                "taxationSchema": "과세",
+                "importType": "수입상품",
+                "searchTags": "",
+                "unexposedAttributes": [
+                    {
+                        "attributeName": "사용체중",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "욕실용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수압상승기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "정수/연수기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚜껑 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "각도조절 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "샤워커튼/봉 구성",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전용품 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "헤드 회전 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕실수납용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕조거름망/마개 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "절수기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚫어뻥 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕실용품 설치방법",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "바구니 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수납/정리용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수량",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "총 수량",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "가로길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "세로길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "손잡이 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "물빠짐여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "프레임 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "세트여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "전원공급방식",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "접이식 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "색상계열",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "설치 유형",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "LED 여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "유광/무광",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "자동/수동",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "커튼레일형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "원단소재",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "변기 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "변기 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "샤워 호스 길이",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "바구니 용도",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전필터 용도",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 헤드 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 설치형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 홀 개수",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "목욕바구니 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚫어뻥 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "세면대 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "선풍기 타입",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "호스 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "마감 유형",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "아이템 높이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "아이템 깊이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "항목 너비가 짧은 가장자리",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "포함 구성 요소",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "쿠팡 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "항목 길이가 더 긴 가장자리",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "품목 모양",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "배수 유형",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "GTIN",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "Parent MPN",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "Variation MPN",
+                        "attributeValue": ""
+                    }
+                ]
+            },
+            "imagePage": {
+                "images": {
+                    "mainImage": "11152c24-대표이미지.jpg",
+                    "additionalImage": "",
+                    "labelImages": [
+                        {
+                            "labelImageType": "제품 한글 표시사항 라벨 또는 도안 이미지",
+                            "labelImageFiles": "b75ae7f8-제품라벨.png"
+                        }
+                    ]
+                },
+                "details": {
+                    "detailedImage": "30dab47c-00.png",
+                    "htmlProductDetailContent": null,
+                    "altText": "헤오르 발 디딤대 블루 1개, 헤오르 발 디딤대 그린 1개, 헤오르 발 디딤대 그레이 1개"
+                },
+                "msrpAgree": true
+            },
+            "legalPage": {
+                "kcMarkType": "해당사항없음",
+                "certificates": [
+                    {
+                        "certificateName": "전기용품 및 생활용품, 어린이 (KC) 인증번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "방송통신 기자재 (EMC) 인증 번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "안전기준적합확인 신고번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "KCS 인증번호",
+                        "certificateValue": "해당사항없음"
+                    }
+                ],
+                "adCert": "",
+                "notices": [
+                    {
+                        "noticeItemName": "품명 및 모델명",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "인증/허가 사항",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "제조국(원산지)",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "제조자(수입자)",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "소비자상담 관련 전화번호",
+                        "noticeItemValue": "컨텐츠 참조"
+                    }
+                ]
+            },
+            "logisticsPage": {
+                "totalSKUsInBox": null,
+                "daysToExpiration": null,
+                "specialHandlingReason": "해당사항없음",
+                "skuUnitBoxWeight": "",
+                "skuUnitBoxDimension": ""
+            },
+            "sourcingPage": {
+                "sourcingChannelType": "",
+                "sourcingChannelId": ""
+            }
+        },
+        {
+            "startPage": {
+                "productName": "헤오르 발 디딤대",
+                "categoryPath": "생활용품>욕실용품>욕실용품/잡화>욕실잡화>욕실디딤대/스탭퍼"
+            },
+            "productPage": {
+                "brand": "브랜드 없음",
+                "commonAttributes": {
+                    "exposedAttributes": [
+                        {
+                            "attributeName": "색상",
+                            "attributeValue": "그린"
+                        },
+                        {
+                            "attributeName": "사이즈",
+                            "attributeValue": "one size"
+                        }
+                    ],
+                    "purchasePrice": 5000,
+                    "coupangSalePrice": 8900,
+                    "productBarcode": "바코드 없음(쿠팡 바코드 생성 요청)"
+                },
+                "manufacturer": "헤오르 협력사",
+                "businessType": "기타 도소매업자",
+                "taxationSchema": "과세",
+                "importType": "수입상품",
+                "searchTags": "",
+                "unexposedAttributes": [
+                    {
+                        "attributeName": "사용체중",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "욕실용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수압상승기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "정수/연수기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚜껑 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "각도조절 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "샤워커튼/봉 구성",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전용품 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "헤드 회전 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕실수납용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕조거름망/마개 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "절수기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚫어뻥 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕실용품 설치방법",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "바구니 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수납/정리용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수량",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "총 수량",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "가로길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "세로길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "손잡이 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "물빠짐여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "프레임 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "세트여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "전원공급방식",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "접이식 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "색상계열",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "설치 유형",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "LED 여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "유광/무광",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "자동/수동",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "커튼레일형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "원단소재",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "변기 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "변기 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "샤워 호스 길이",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "바구니 용도",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전필터 용도",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 헤드 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 설치형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 홀 개수",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "목욕바구니 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚫어뻥 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "세면대 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "선풍기 타입",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "호스 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "마감 유형",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "아이템 높이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "아이템 깊이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "항목 너비가 짧은 가장자리",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "포함 구성 요소",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "쿠팡 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "항목 길이가 더 긴 가장자리",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "품목 모양",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "배수 유형",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "GTIN",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "Parent MPN",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "Variation MPN",
+                        "attributeValue": ""
+                    }
+                ]
+            },
+            "imagePage": {
+                "images": {
+                    "mainImage": "9a6026b4-02.jpg",
+                    "additionalImage": "",
+                    "labelImages": [
+                        {
+                            "labelImageType": "제품 한글 표시사항 라벨 또는 도안 이미지",
+                            "labelImageFiles": "b75ae7f8-제품라벨.png"
+                        }
+                    ]
+                },
+                "details": {
+                    "detailedImage": "30dab47c-00.png",
+                    "htmlProductDetailContent": null,
+                    "altText": "헤오르 발 디딤대 블루 1개, 헤오르 발 디딤대 그린 1개, 헤오르 발 디딤대 그레이 1개"
+                },
+                "msrpAgree": true
+            },
+            "legalPage": {
+                "kcMarkType": "해당사항없음",
+                "certificates": [
+                    {
+                        "certificateName": "전기용품 및 생활용품, 어린이 (KC) 인증번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "방송통신 기자재 (EMC) 인증 번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "안전기준적합확인 신고번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "KCS 인증번호",
+                        "certificateValue": "해당사항없음"
+                    }
+                ],
+                "adCert": "",
+                "notices": [
+                    {
+                        "noticeItemName": "품명 및 모델명",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "인증/허가 사항",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "제조국(원산지)",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "제조자(수입자)",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "소비자상담 관련 전화번호",
+                        "noticeItemValue": "컨텐츠 참조"
+                    }
+                ]
+            },
+            "logisticsPage": {
+                "totalSKUsInBox": null,
+                "daysToExpiration": null,
+                "specialHandlingReason": "해당사항없음",
+                "skuUnitBoxWeight": "",
+                "skuUnitBoxDimension": ""
+            },
+            "sourcingPage": {
+                "sourcingChannelType": "",
+                "sourcingChannelId": ""
+            }
+        },
+        {
+            "startPage": {
+                "productName": "헤오르 발 디딤대",
+                "categoryPath": "생활용품>욕실용품>욕실용품/잡화>욕실잡화>욕실디딤대/스탭퍼"
+            },
+            "productPage": {
+                "brand": "브랜드 없음",
+                "commonAttributes": {
+                    "exposedAttributes": [
+                        {
+                            "attributeName": "색상",
+                            "attributeValue": "그레이"
+                        },
+                        {
+                            "attributeName": "사이즈",
+                            "attributeValue": "one size"
+                        }
+                    ],
+                    "purchasePrice": 5000,
+                    "coupangSalePrice": 8900,
+                    "productBarcode": "바코드 없음(쿠팡 바코드 생성 요청)"
+                },
+                "manufacturer": "헤오르 협력사",
+                "businessType": "기타 도소매업자",
+                "taxationSchema": "과세",
+                "importType": "수입상품",
+                "searchTags": "",
+                "unexposedAttributes": [
+                    {
+                        "attributeName": "사용체중",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "욕실용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수압상승기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "정수/연수기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚜껑 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "각도조절 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "샤워커튼/봉 구성",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전용품 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "헤드 회전 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕실수납용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕조거름망/마개 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "절수기능 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚫어뻥 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "욕실용품 설치방법",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "바구니 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수납/정리용품 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수량",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "총 수량",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "가로길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "세로길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "손잡이 포함여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "물빠짐여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "프레임 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "세트여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "전원공급방식",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "접이식 가능여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "색상계열",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "설치 유형",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "LED 여부",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "길이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "유광/무광",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "자동/수동",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "커튼레일형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "원단소재",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "변기 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "변기 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "샤워 호스 길이",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "바구니 용도",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전필터 용도",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 헤드 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 설치형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "수전 홀 개수",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "목욕바구니 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "뚫어뻥 종류",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "세면대 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "선풍기 타입",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "호스 형태",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "마감 유형",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "아이템 높이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "아이템 깊이",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "항목 너비가 짧은 가장자리",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "포함 구성 요소",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "쿠팡 재질",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "항목 길이가 더 긴 가장자리",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "품목 모양",
+                        "attributeValue": null
+                    },
+                    {
+                        "attributeName": "배수 유형",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "GTIN",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "Parent MPN",
+                        "attributeValue": ""
+                    },
+                    {
+                        "attributeName": "Variation MPN",
+                        "attributeValue": ""
+                    }
+                ]
+            },
+            "imagePage": {
+                "images": {
+                    "mainImage": "cb5fad5e-03.jpg",
+                    "additionalImage": "",
+                    "labelImages": [
+                        {
+                            "labelImageType": "제품 한글 표시사항 라벨 또는 도안 이미지",
+                            "labelImageFiles": "b75ae7f8-제품라벨.png"
+                        }
+                    ]
+                },
+                "details": {
+                    "detailedImage": "30dab47c-00.png",
+                    "htmlProductDetailContent": null,
+                    "altText": "헤오르 발 디딤대 블루 1개, 헤오르 발 디딤대 그린 1개, 헤오르 발 디딤대 그레이 1개"
+                },
+                "msrpAgree": true
+            },
+            "legalPage": {
+                "kcMarkType": "해당사항없음",
+                "certificates": [
+                    {
+                        "certificateName": "전기용품 및 생활용품, 어린이 (KC) 인증번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "방송통신 기자재 (EMC) 인증 번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "안전기준적합확인 신고번호",
+                        "certificateValue": "해당사항없음"
+                    },
+                    {
+                        "certificateName": "KCS 인증번호",
+                        "certificateValue": "해당사항없음"
+                    }
+                ],
+                "adCert": "",
+                "notices": [
+                    {
+                        "noticeItemName": "품명 및 모델명",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "인증/허가 사항",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "제조국(원산지)",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "제조자(수입자)",
+                        "noticeItemValue": "컨텐츠 참조"
+                    },
+                    {
+                        "noticeItemName": "소비자상담 관련 전화번호",
+                        "noticeItemValue": "컨텐츠 참조"
+                    }
+                ]
+            },
+            "logisticsPage": {
+                "totalSKUsInBox": null,
+                "daysToExpiration": null,
+                "specialHandlingReason": "해당사항없음",
+                "skuUnitBoxWeight": "",
+                "skuUnitBoxDimension": ""
+            },
+            "sourcingPage": {
+                "sourcingChannelType": "",
+                "sourcingChannelId": ""
+            }
+        }
+    ],
+    "scope": "Retail_Categorized_Single",
+    "productNoticeNumber": 38,
+    "version": 164,
+    "remark": null
+}

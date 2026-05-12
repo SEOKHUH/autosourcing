@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "헤오르 AutoSourcing",
+  "version": "1.0.0",
+  "description": "1688 → 쿠팡 서플라이어 허브 자동 소싱",
+  "permissions": [
+    "storage",
+    "cookies",
+    "downloads",
+    "scripting",
+    "tabs",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://detail.1688.com/*",
+    "https://*.1688.com/*",
+    "https://*.alicdn.com/*",
+    "https://*.alibaba.com/*",
+    "https://supplier.coupang.com/*",
+    "https://translate.googleapis.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://detail.1688.com/*", "https://*.1688.com/offer/*"],
+      "js": ["content_scripts/scraper_1688.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://supplier.coupang.com/*"],
+      "js": ["content_scripts/supplier_hub.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "헤오르 AutoSourcing"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'self'; img-src 'self' blob: data:; connect-src 'self' https://translate.googleapis.com https://generativelanguage.googleapis.com https://supplier.coupang.com https://*.1688.com https://*.alicdn.com https://*.alibaba.com https://fonts.googleapis.com https://fonts.gstatic.com blob:"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["static/*", "vendor/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
