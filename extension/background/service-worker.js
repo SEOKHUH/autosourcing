@@ -131,120 +131,61 @@ async function handleRefineProductName(name, sendResponse) {
 async function handleScrapeRequest(msg, sendResponse) {
   try {
     const url = msg.url;
-    let tab = await findOrCreateTab(url, /1688\.com/);
 
-    // 탭 로드 완료 대기
+    // ── Plan A: background fetch (탭 없이) ────────────────────────────────────
+    broadcastToUI({ type: 'SCRAPE_LOG', text: '⏳ [Plan A] background fetch 시도 중...' });
+    const bgResult = await tryBackgroundFetch(url);
+    if (bgResult) {
+      broadcastToUI({ type: 'SCRAPE_LOG', text: `✅ [Plan A] 성공 — SKU ${bgResult.skus?.length || 0}개, 이미지 ${bgResult.images?.length || 0}장` });
+      broadcastToUI({ type: 'SCRAPE_DONE', result: bgResult });
+      sendResponse({ ok: true });
+      return;
+    }
+
+    // ── Plan B: 탭 열기 + window.context ─────────────────────────────────────
+    broadcastToUI({ type: 'SCRAPE_LOG', text: '⚠️ [Plan A] 실패 → 탭 방식으로 전환' });
+    const tab = await findOrCreateTab(url, /1688\.com/);
     await waitForTabLoad(tab.id);
 
-    // ── MAIN world에서 페이지 globals 직접 읽기 ───────────────────────────────
-    // content script는 isolated world라 window.runParams 등을 못 읽음.
-    // executeScript(world:'MAIN')의 반환값으로 가져와서 START_SCRAPE에 실어 보냄.
     let preloadedData = null;
     try {
       const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         world: 'MAIN',
         func: function() {
-          function isProduct(v) {
-            if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
-            return !!(v.subject || v.title || v.skuModel || v.skuPriceList || v.itemImages ||
-              (v.offerDetail   && (v.offerDetail.subject   || v.offerDetail.skuModel)) ||
-              (v.offerDetailVO && (v.offerDetailVO.subject  || v.offerDetailVO.skuModel)));
+          var ctx = window.context;
+          if (ctx && ctx.result && ctx.result.data && ctx.result.data.gallery &&
+              ctx.result.data.gallery.fields && ctx.result.data.gallery.fields.subject) {
+            try { return { src: 'context', data: JSON.parse(JSON.stringify(ctx)) }; }
+            catch(e) {}
           }
-
-          // ── 1. 알려진 글로벌 변수 체크 ──────────────────────────────────────
-          var GLOBALS = ['runParams','__GLOBAL_DATA__','pageData','_data_','__pageInfo__',
-                         'detailData','__INIT_DATA__','offerDetailModel','__INITIAL_STATE__'];
-          for (var i = 0; i < GLOBALS.length; i++) {
-            var g = window[GLOBALS[i]];
-            var candidates = [g && g.data, g,
-              g && g.data && g.data.offerDetail, g && g.data && g.data.offerDetailVO,
-              g && g.offerDetail, g && g.offerDetailVO, g && g.model];
-            for (var j = 0; j < candidates.length; j++) {
-              if (isProduct(candidates[j])) {
-                try { return { src: GLOBALS[i], data: JSON.parse(JSON.stringify(candidates[j])) }; }
-                catch(e) {}
-              }
-            }
-          }
-
-          // ── 2. window 전체 스캔 — SKU 데이터 있는 것 우선 ──────────────────
-          function hasSkuData(v) {
-            if (!v || typeof v !== 'object') return false;
-            var sm = v.skuModel || (v.offerDetail && v.offerDetail.skuModel) ||
-                     (v.offerDetailVO && v.offerDetailVO.skuModel);
-            return sm && (sm.skuPriceList || sm.skuList) &&
-                   ((sm.skuPriceList || sm.skuList).length > 0);
-          }
-          var fallbackMatch = null;
-          try {
-            var keys = Object.keys(window);
-            for (var k = 0; k < keys.length; k++) {
-              var key = keys[k];
-              if (/^(on|webkit|moz|ms|__react|Symbol)/.test(key)) continue;
-              try {
-                var val = window[key];
-                if (!val || typeof val !== 'object') continue;
-                var cands2 = [val, val.data, val.result, val.offerDetail, val.offerDetailVO, val.model];
-                for (var m = 0; m < cands2.length; m++) {
-                  var c = cands2[m];
-                  if (!isProduct(c)) continue;
-                  // SKU 데이터가 있으면 바로 반환 (최우선)
-                  if (hasSkuData(c)) {
-                    return { src: 'window-scan-sku:' + key, data: JSON.parse(JSON.stringify(c)) };
-                  }
-                  // SKU 없어도 일단 저장 (폴백용)
-                  if (!fallbackMatch) {
-                    try { fallbackMatch = { src: 'window-scan:' + key, data: JSON.parse(JSON.stringify(c)) }; }
-                    catch(e) {}
-                  }
-                }
-              } catch(e) {}
-            }
-          } catch(e) {}
-          if (fallbackMatch) return fallbackMatch;
-
-          // ── 3. localStorage / sessionStorage 체크 ───────────────────────────
-          try {
-            for (var si = 0; si < sessionStorage.length; si++) {
-              var sk = sessionStorage.key(si);
-              var sv = JSON.parse(sessionStorage.getItem(sk) || 'null');
-              if (isProduct(sv) || isProduct(sv && sv.data)) {
-                return { src: 'sessionStorage:' + sk, data: sv && sv.data || sv };
-              }
-            }
-          } catch(e) {}
-
-          // ── 4. 진단: 어떤 window 프로퍼티가 객체인지 목록 반환 ───────────────
-          var objKeys = [];
-          try {
-            Object.keys(window).forEach(function(k) {
-              try {
-                if (window[k] && typeof window[k] === 'object' &&
-                    !Array.isArray(window[k]) && !/^(on|webkit)/.test(k)) {
-                  objKeys.push(k);
-                }
-              } catch(e) {}
-            });
-          } catch(e) {}
-          return { src: 'not-found', debug: objKeys.slice(0, 50) };
+          return { src: 'not-found' };
         },
       });
-      if (results && results[0] && results[0].result) {
-        preloadedData = results[0].result;
-      }
+      if (results?.[0]?.result) preloadedData = results[0].result;
     } catch (e) {
       console.warn('[SW] executeScript 실패:', e.message);
     }
 
-    // content script에 스크래핑 시작 메시지 전달 (preloadedData 포함 가능)
-    chrome.tabs.sendMessage(tab.id, {
-      type: 'START_SCRAPE',
-      url: url,
-      tabId: tab.id,
-      preloadedData,
-    });
+    // window.context 데이터 있으면 직접 처리 (탭 닫기)
+    if (preloadedData?.src === 'context') {
+      const result = mapContextData(preloadedData.data, null);
+      if (result?.title_cn) {
+        result.detail_images = await fetchDetailImages(result.detailUrl);
+        result.scrape_method = 'WindowContext';
+        result.sku_debug     = ['window-context'];
+        result.attr_debug    = ['tab-no-html'];
+        broadcastToUI({ type: 'SCRAPE_LOG', text: `✅ [Plan B] window.context 성공 — SKU ${result.skus?.length || 0}개` });
+        broadcastToUI({ type: 'SCRAPE_DONE', result });
+        chrome.tabs.remove(tab.id);
+        sendResponse({ ok: true });
+        return;
+      }
+    }
 
+    // ── 최종 폴백: DOM 스크래핑 (content script) ──────────────────────────────
+    broadcastToUI({ type: 'SCRAPE_LOG', text: '⚠️ window.context 없음 → DOM 스크래핑으로 전환' });
+    chrome.tabs.sendMessage(tab.id, { type: 'START_SCRAPE', url, tabId: tab.id, preloadedData });
     sendResponse({ ok: true, tabId: tab.id });
   } catch (e) {
     sendResponse({ ok: false, error: e.message });
@@ -544,12 +485,16 @@ function pageInterceptorFn() {
     if (!text || (text[0] !== '{' && text[0] !== '[')) return;
     try {
       var root = JSON.parse(text);
+      console.log('[1688-intercept] API:', reqUrl.split('?')[0], '| top keys:', Object.keys(root).slice(0, 8));
       var cands = [root, root.data, root.result, root.pageData, root.content,
         root.data && root.data.offerDetail,
         root.data && root.data.offerDetailVO,
         root.data && root.data.model];
       for (var i = 0; i < cands.length; i++) {
-        if (isProduct(cands[i])) { postProduct(cands[i], reqUrl); return; }
+        if (isProduct(cands[i])) {
+          console.log('[1688-intercept] ✅ 상품 데이터 발견! URL:', reqUrl.split('?')[0], '| keys:', Object.keys(cands[i]).slice(0, 15));
+          postProduct(cands[i], reqUrl); return;
+        }
       }
     } catch(e) {}
   }
@@ -583,4 +528,209 @@ function arrayBufferToBase64(buffer) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
+}
+
+// ── window.context 기반 스크래퍼 헬퍼 ────────────────────────────────────────
+
+function extractWindowContext(html, debug = false) {
+  // window.context= 또는 window.context = 만 찾기 (contextPath 등 제외)
+  const assignRe = /window\.context\s*=/g;
+  let match;
+  let eqEndIdx = -1;
+  while ((match = assignRe.exec(html)) !== null) {
+    // = 바로 뒤 위치
+    eqEndIdx = match.index + match[0].length;
+    break;
+  }
+  if (eqEndIdx === -1) return null;
+
+  // IIFE 패턴 감지: window.context = (function...
+  const afterEq = html.slice(eqEndIdx, eqEndIdx + 20).trimStart();
+  if (debug) broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] afterEq: "${afterEq.slice(0, 30)}"` });
+  let dataStart;
+
+  if (afterEq.startsWith('(function')) {
+    // 함수 본문 { } 건너뛰고 실제 데이터 인자 { 찾기
+    const funcBodyStart = html.indexOf('{', eqEndIdx);
+    if (funcBodyStart === -1) return null;
+    let depth = 0, inStr = false, strChar = '', escaped = false, funcBodyEnd = -1;
+    for (let i = funcBodyStart; i < html.length; i++) {
+      const c = html[i];
+      if (escaped) { escaped = false; continue; }
+      if (c === '\\' && inStr) { escaped = true; continue; }
+      if (!inStr && (c === '"' || c === "'")) { inStr = true; strChar = c; continue; }
+      if (inStr && c === strChar) { inStr = false; continue; }
+      if (!inStr) {
+        if (c === '{') depth++;
+        else if (c === '}') { depth--; if (depth === 0) { funcBodyEnd = i; break; } }
+      }
+    }
+    if (funcBodyEnd === -1) return null;
+    const commaIdx = html.indexOf(',{', funcBodyEnd);
+    if (commaIdx === -1) return null;
+    dataStart = commaIdx + 1;
+  } else {
+    // 일반 할당: window.context = {...}
+    dataStart = html.indexOf('{', eqEndIdx);
+    if (dataStart === -1) return null;
+  }
+
+  if (debug) broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] context 원문 앞 200자: ${html.slice(dataStart, dataStart + 200).replace(/\n/g, ' ')}` });
+
+  let depth = 0, inStr = false, strChar = '', escaped = false;
+  for (let i = dataStart; i < dataStart + 3000000 && i < html.length; i++) {
+    const c = html[i];
+    if (escaped) { escaped = false; continue; }
+    if (c === '\\' && inStr) { escaped = true; continue; }
+    if (!inStr && (c === '"' || c === "'")) { inStr = true; strChar = c; continue; }
+    if (inStr && c === strChar) { inStr = false; continue; }
+    if (!inStr) {
+      if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) {
+          const raw = html.slice(dataStart, i + 1);
+          const fixedRaw = raw.replace(/([{,])\s*(\d+)\s*:/g, '$1"$2":');
+          try { return JSON.parse(fixedRaw); }
+          catch(e) {
+            if (debug) {
+              const errPos = parseInt(e.message.match(/position (\d+)/)?.[1] || '0');
+              broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] JSON 파싱 에러: ${e.message}, 길이: ${raw.length}자` });
+              broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] 에러 위치 ±100자: ...${raw.slice(Math.max(0, errPos - 100), errPos + 100).replace(/\n/g, '↵')}...` });
+              console.log('[Plan A] raw JSON 전체:', raw);
+            }
+            return null;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function parseAttributesFromHtml(html) {
+  const attrs = [];
+  const skip = new Set(['항목 번호.', '항목번호', '품목 번호', '품목번호', '색상', '상표', '브랜드', 'SKU', 'Item No.']);
+  const re = /<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const key = m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+    const val = m[2].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+    if (!key || !val || key.length > 25 || val.length > 200) continue;
+    if (skip.has(key) || /^\d+$/.test(key)) continue;
+    attrs.push({ name: key, value: val });
+  }
+  return attrs;
+}
+
+function htmlDecodeStr(str) {
+  return str.replace(/&gt;/g, '>').replace(/&lt;/g, '<')
+            .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+}
+
+function mapContextData(ctx, htmlText) {
+  const data = ctx?.result?.data;
+  if (!data) return null;
+  const title = data.gallery?.fields?.subject;
+  const dj = data.Root?.fields?.dataJson;
+  if (!title || !dj) return null;
+
+  const images = (dj.images || []).map(img => img.fullPathImageURI).filter(Boolean);
+
+  const skuInfoMap = dj.skuModel?.skuInfoMap || {};
+  const skuProps   = dj.skuModel?.skuProps   || [];
+
+  const nameToImageUrl = {};
+  for (const prop of skuProps) {
+    for (const v of (prop.value || [])) {
+      if (v.imageUrl && v.name) nameToImageUrl[v.name] = v.imageUrl;
+    }
+  }
+
+  const skus = [];
+  let priceMin = Infinity;
+  for (const [rawKey, item] of Object.entries(skuInfoMap)) {
+    const key   = htmlDecodeStr(rawKey);
+    const name  = key.split('>')[0].trim();
+    const price = parseFloat(item.discountPrice || item.price || 0);
+    if (price > 0 && price < priceMin) priceMin = price;
+    skus.push({ name, price, imageUrl: nameToImageUrl[name] || null, skuId: item.skuId });
+  }
+  if (priceMin === Infinity) priceMin = 0;
+
+  const sku_groups = skuProps.map(prop => ({
+    dimension: prop.prop,
+    isColorDim: prop.value?.some(v => v.imageUrl),
+    items: (prop.value || []).map(v => ({ name: v.name, imageUrl: v.imageUrl || null })),
+  }));
+
+  const attributes = htmlText ? parseAttributesFromHtml(htmlText) : [];
+  const detailUrl  = data.description?.fields?.detailUrl || '';
+
+  return { title_cn: title, price_min: priceMin, images, skus, sku_groups, attributes, detailUrl };
+}
+
+async function fetchDetailImages(detailUrl) {
+  if (!detailUrl) return [];
+  try {
+    const resp = await fetch(detailUrl, {
+      headers: { 'Referer': 'https://detail.1688.com/', 'User-Agent': 'Mozilla/5.0' },
+    });
+    if (!resp.ok) return [];
+    const html = await resp.text();
+    const re = /<img[^>]+src=["']([^"']+)["']/gi;
+    const imgs = [];
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      let src = m[1];
+      if (!src.includes('alicdn.com') && !src.includes('1688.com') && !src.includes('tmall.com')) continue;
+      if (src.startsWith('//')) src = 'https:' + src;
+      if (src.startsWith('http')) imgs.push(src);
+    }
+    return [...new Set(imgs)].slice(0, 20);
+  } catch (e) {
+    return [];
+  }
+}
+
+async function tryBackgroundFetch(url) {
+  try {
+    const cookies = await new Promise(r => chrome.cookies.getAll({ domain: '.1688.com' }, r));
+    broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] 쿠키 ${cookies?.length || 0}개` });
+    if (!cookies?.length) return null;
+
+    const resp = await fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Referer': 'https://www.1688.com/',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'same-site',
+      },
+    });
+    broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] fetch status: ${resp.status}, url: ${resp.url.slice(0, 80)}` });
+    if (!resp.ok) return null;
+    const html = await resp.text();
+    broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] HTML ${html.length}자, window.context 포함: ${html.includes('window.context')}` });
+
+    const ctx = extractWindowContext(html, true);
+    broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] context 파싱: ${ctx ? '성공' : '실패'}, subject: ${ctx?.result?.data?.gallery?.fields?.subject?.slice(0, 30) || '없음'}` });
+    if (!ctx?.result?.data?.gallery?.fields?.subject) return null;
+
+    const result = mapContextData(ctx, html);
+    if (!result?.title_cn) return null;
+
+    result.detail_images = await fetchDetailImages(result.detailUrl);
+    result.scrape_method = 'BackgroundFetch';
+    result.sku_debug     = ['background-fetch'];
+    result.attr_debug    = ['html-td-parse'];
+    return result;
+  } catch (e) {
+    broadcastToUI({ type: 'SCRAPE_LOG', text: `[Plan A] 예외: ${e.message}` });
+    console.warn('[SW] tryBackgroundFetch 실패:', e.message);
+    return null;
+  }
 }

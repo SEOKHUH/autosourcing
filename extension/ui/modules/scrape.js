@@ -16,27 +16,42 @@ export async function onScrapeDone(result) {
   if (!state.currentItemId) return;
 
   try {
-    appendGlobalLog('번역 중...');
-    const [titleKr, ...attrKr] = await Translator.translateBatch([
-      result.title_cn,
-      ...(result.attributes || []).map(a => a.value),
-    ]);
+    const isKorean = result.scrape_method === 'BackgroundFetch' || result.scrape_method === 'WindowContext';
+    let titleKr, attrs, skus, sku_groups_translated;
 
-    const cleanName  = Translator.cleanProductName(titleKr);
-    const skuKrNames = await Promise.all(result.skus.map(s => Translator.translateToKorean(s.name)));
-    const attrs      = result.attributes.map((a, i) => ({ ...a, value_kr: attrKr[i] || a.value }));
-    const skus       = result.skus.map((s, i) => ({ ...s, name_kr: skuKrNames[i] || s.name }));
-
-    let sku_groups_translated = [];
-    if (result.sku_groups?.length >= 2) {
-      sku_groups_translated = await Promise.all(result.sku_groups.map(async group => {
-        const dimension_kr = group.dimension ? await Translator.translateToKorean(group.dimension) : '';
-        const items = await Promise.all(group.items.map(async item => ({
-          ...item, name_kr: await Translator.translateToKorean(item.name),
-        })));
-        return { ...group, dimension_kr, items };
+    if (isKorean) {
+      appendGlobalLog('한국어 데이터 — 번역 스킵');
+      titleKr = result.title_cn;
+      attrs   = (result.attributes || []).map(a => ({ ...a, value_kr: a.value }));
+      skus    = (result.skus || []).map(s => ({ ...s, name_kr: s.name }));
+      sku_groups_translated = (result.sku_groups || []).map(g => ({
+        ...g,
+        dimension_kr: g.dimension,
+        items: (g.items || []).map(i => ({ ...i, name_kr: i.name })),
       }));
+    } else {
+      appendGlobalLog('번역 중...');
+      const [_titleKr, ...attrKr] = await Translator.translateBatch([
+        result.title_cn,
+        ...(result.attributes || []).map(a => a.value),
+      ]);
+      titleKr  = _titleKr;
+      const skuKrNames = await Promise.all(result.skus.map(s => Translator.translateToKorean(s.name)));
+      attrs    = result.attributes.map((a, i) => ({ ...a, value_kr: attrKr[i] || a.value }));
+      skus     = result.skus.map((s, i) => ({ ...s, name_kr: skuKrNames[i] || s.name }));
+      sku_groups_translated = [];
+      if (result.sku_groups?.length >= 2) {
+        sku_groups_translated = await Promise.all(result.sku_groups.map(async group => {
+          const dimension_kr = group.dimension ? await Translator.translateToKorean(group.dimension) : '';
+          const items = await Promise.all(group.items.map(async item => ({
+            ...item, name_kr: await Translator.translateToKorean(item.name),
+          })));
+          return { ...group, dimension_kr, items };
+        }));
+      }
     }
+
+    const cleanName = Translator.cleanProductName(titleKr);
 
     appendGlobalLog(`이미지 다운로드 중... (대표 ${result.images.length}장)`);
     const mainImgData   = await downloadImagesViaSwitch(result.images,        'main_'    + state.currentItemId);

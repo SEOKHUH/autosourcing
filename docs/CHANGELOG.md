@@ -2,6 +2,44 @@
 
 ---
 
+## 2026-05-13 — window.context SSR 스크래퍼 전환 (Claude Code)
+
+### 변경 내용
+
+**`extension/background/service-worker.js`**
+- `extractWindowContext(html, debug)`: HTML에서 `window.context` IIFE 패턴 감지 후 data 인수 JSON 추출
+  - `window\.context\s*=/g` 정규식으로 `window.contextPath` 오인식 방지
+  - IIFE 함수 바디 bracket-count 스킵 → `,{` 이후 data 인수 추출
+  - unquoted 숫자 키(`{5703581853351:0.5}`) → `{"5703581853351":0.5}` 전처리 후 JSON.parse
+- `parseAttributesFromHtml(html)`: `<td>키</td><td>값</td>` 구조 파싱으로 재료·사양·무게 등 속성 수집
+- `htmlDecodeStr(str)`: `&gt;`, `&lt;` 등 HTML 엔티티 디코딩
+- `mapContextData(ctx, htmlText)`: window.context → `{title_cn, images, skus, sku_groups, attributes, detailUrl}` 변환
+  - SKU 가격: `discountPrice` 우선 사용 (`price` 없을 수 있음)
+  - SKU 이미지: `skuProps`에서 이름 매칭으로 추출
+- `fetchDetailImages(detailUrl)`: 상세 이미지 URL 별도 fetch → img src 추출
+- `tryBackgroundFetch(url)`: Plan A — 쿠키 포함 SW fetch → window.context 파싱 → 탭 없이 완료
+- `handleScrapeRequest`: Plan A 먼저 시도, 실패 시 Plan B(탭 방식) fall-through
+  - Plan B: `executeScript(world:'MAIN')`으로 탭에서 `window.context` 직접 읽기
+
+**`extension/ui/modules/scrape.js`**
+- `scrape_method === 'BackgroundFetch' || 'WindowContext'`이면 번역 전체 스킵 (이미 한국어)
+- `sku_groups_translated`: 번역 없이 `dimension_kr = dimension`, `name_kr = name`으로 직접 매핑
+
+**`extension/ui/modules/step4.js`**
+- `attributes` → executeScript args에 추가
+- 사이즈 exposedAttribute: `'one size'` 고정 → `attributes`에서 `사양` 값 추출 (없으면 `'one size'` 폴백)
+
+**`docs/work-plans/scraper_window_context.md`** (신규)
+- 작업 계획서 작성
+
+### 결과
+- Plan A(BackgroundFetch): 탭 없이 ✅ 동작 (SKU 5개, 이미지 10장 확인)
+- Plan B(WindowContext): 탭 방식 ✅ 동작 (Plan A 실패 시 폴백)
+- 번역 스킵 ✅ (한국어 데이터 그대로 사용)
+- 재질(속성) 수집: 미완료 🔄 (parseAttributesFromHtml 결과 0개, 다음 세션에서 디버그 예정)
+
+---
+
 ## 2026-05-08 — 이미지 매칭/업로드 버그 수정 (Claude Code)
 
 ### 변경 내용

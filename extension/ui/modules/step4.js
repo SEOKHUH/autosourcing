@@ -185,7 +185,7 @@ export async function startRegister() {
                 exposedAttributes: [
                   ...(sku.optionName ? [{ attributeName: '색상', attributeValue: (p.optionCustomNames && p.optionCustomNames[sku.optionName]) || sku.optionName }] : []),
                   { attributeName: '수량', attributeValue: p.qty },
-                  { attributeName: '사이즈', attributeValue: 'one size' },
+                  { attributeName: '사이즈', attributeValue: (p.attributes || []).find(a => a.name === '사양')?.value || 'one size' },
                 ],
                 purchasePrice: p.supplyPrice,
                 coupangSalePrice: p.salePrice,
@@ -293,6 +293,7 @@ export async function startRegister() {
           noticeItems: item.productNoticeItems || [],
           labelImage: recToB64(labelRec),
           detailImage: recToB64(detailRec),
+          attributes: state.currentScrapeResult?.attrs_translated || [],
         }],
       }, (res) => {
         if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
