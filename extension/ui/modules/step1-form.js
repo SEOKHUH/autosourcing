@@ -10,7 +10,7 @@ export async function fillStep1(result) {
   $('f-name').value = '상품명 정제 중...';
 
   const matAttr = (result.attrs_translated || result.attributes || []).find(a =>
-    /材质|面料|材料|재질|소재|material/i.test(a.name)
+    /材质|面料|材料|재질|재료|소재|material/i.test(a.name)
   );
   let matValue = matAttr ? (matAttr.value_kr || matAttr.value) : '';
   if (matAttr?.value) {
@@ -24,6 +24,12 @@ export async function fillStep1(result) {
   }
   if (/인증|없음|해당\s*없음|해당\s*사항|기타|N\/A/i.test(matValue)) matValue = '';
   $('f-material').value = matValue;
+
+  const specAttr = (result.attrs_translated || result.attributes || []).find(a => a.name === '사양');
+  $('f-spec').value = specAttr ? (specAttr.value_kr || specAttr.value) : '';
+
+  const weightAttr = (result.attrs_translated || result.attributes || []).find(a => a.name === '무게');
+  $('f-weight').value = weightAttr ? (weightAttr.value_kr || weightAttr.value) : '';
 
   const rawSkus = result.skus || [];
   const validPrices = rawSkus.map(s => s.price).filter(p => p > 0);
@@ -51,18 +57,34 @@ export async function refineProductName(rawName) {
 
 export function onSkuChange() {
   const allSkus = state.currentScrapeResult?.skus_translated || state.currentScrapeResult?.skus || [];
-  const checkedSkus = allSkus.filter(s => state.selectedOptions.includes(s.name_kr || s.name));
+  const groups  = state.currentScrapeResult?.sku_groups_translated || [];
+
+  const COLOR_RE = /색상|색깔|컬러|颜色|色彩|色系|color/i;
+  const colorNames = new Set(
+    groups
+      .filter(g => g.isColorDim || g.items.some(i => i.imageUrl) || COLOR_RE.test(g.dimension_kr || g.dimension || ''))
+      .flatMap(g => g.items.map(i => i.name_kr || i.name))
+  );
+
+  // 사양 차원 옵션만 분리 — 사양 선택 시 해당 가격 우선 사용
+  const selectedSpecs = state.selectedOptions.filter(o => o !== '__default__' && !colorNames.has(o));
+  const priceCandidates = selectedSpecs.length > 0 ? selectedSpecs : state.selectedOptions;
+
+  const checkedSkus = allSkus.filter(s => priceCandidates.includes(s.name_kr || s.name));
   if (!checkedSkus.length) return;
 
   const validPrices = checkedSkus.map(s => parseFloat(s.price) || 0).filter(p => p > 0);
-  let maxPrice = validPrices.length > 0 ? Math.max(...validPrices) : (parseFloat(state.currentScrapeResult?.price_min) || 0);
+  const maxPrice = validPrices.length > 0 ? Math.max(...validPrices) : (parseFloat(state.currentScrapeResult?.price_min) || 0);
 
   const qty = parseInt($('f-qty').value) || 1;
   updatePriceDisplay(maxPrice, PriceCalculator.calculatePrices(maxPrice, qty));
 
-  // 색상 차원 옵션명만 f-option에 표시 (사양 차원 제외)
-  // isColorDim 플래그 또는 차원명 키워드(색/颜色 등)로 색상 차원 판별
-  const groups = state.currentScrapeResult?.sku_groups_translated || [];
+  // 2D 제품: 사양 차원 선택 시 f-spec 업데이트
+  if (groups.length >= 2) {
+    $('f-spec').value = selectedSpecs.join(', ');
+  }
+
+  // f-option에는 색상 차원 옵션명만 표시
   let colorOptionText;
   if (groups.length === 0) {
     colorOptionText = state.selectedOptions
@@ -70,11 +92,6 @@ export function onSkuChange() {
       .map(o => state.optionCustomNames[o] || o)
       .join(', ');
   } else {
-    const colorNames = new Set(
-      groups
-        .filter(g => g.isColorDim || g.items.some(i => i.imageUrl) || /색상|색|컬러|颜色|色彩|色系|color/i.test(g.dimension_kr || g.dimension || ''))
-        .flatMap(g => g.items.map(item => item.name_kr || item.name))
-    );
     colorOptionText = state.selectedOptions
       .filter(o => o !== '__default__' && colorNames.has(o))
       .map(o => state.optionCustomNames[o] || o)

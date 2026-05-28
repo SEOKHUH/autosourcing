@@ -34,4 +34,5 @@ Step 4 — 서플라이어 허브 Draft API 4단계 호출로 임시저장
 - 이미지는 ArrayBuffer → base64 변환 후 executeScript args로 전달 (Blob은 직렬화 불가)
 - pre-update가 없으면 업로드 API에서 imagePage 노드 null → 서버 Jackson NPE(500) 발생
 - `adCert: ''` 전송 = "있음"으로 표시 → 필드 자체를 전송하지 않아야 "없음"
-- 사이즈: 현재 `one size` 고정 (1688 API 전환 후 실제 규격값으로 교체 예정)
+- 사이즈: `f-spec` 입력값(수집된 사양) 사용, 없으면 `'one size'` 폴백
+- executeScript args: `spec`(f-spec 값), `weight`(f-weight 값) 포함 — 현재 spec은 사이즈에 사용, weight는 전달만 함(logisticsPage 미적용)

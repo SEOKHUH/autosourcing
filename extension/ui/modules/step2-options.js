@@ -20,13 +20,19 @@ export async function renderOptionCards(skus, skuGroups = null) {
   }
 
   if (skuGroups?.length >= 2) {
-    for (const group of skuGroups) {
-      const hasImages = group.items.some(item => item.imageUrl);
+    const COLOR_RE = /색상|색깔|컬러|颜色|色彩|色系|color/i;
+    const sorted = [...skuGroups].sort((a, b) => {
+      const aIsColor = a.isColorDim || a.items.some(i => i.imageUrl) || COLOR_RE.test(a.dimension_kr || a.dimension || '');
+      const bIsColor = b.isColorDim || b.items.some(i => i.imageUrl) || COLOR_RE.test(b.dimension_kr || b.dimension || '');
+      return (aIsColor ? 1 : 0) - (bIsColor ? 1 : 0);
+    });
+    for (const group of sorted) {
+      const isColor = group.isColorDim || group.items.some(item => item.imageUrl) || COLOR_RE.test(group.dimension_kr || group.dimension || '');
       const label = document.createElement('div');
       label.className  = 'sku-dim-label';
       label.textContent = group.dimension_kr || group.dimension || '옵션';
       container.appendChild(label);
-      if (hasImages) await renderSkuCards(group.items, container);
+      if (isColor) await renderSkuCards(group.items, container);
       else renderSkuChips(group.items, container);
     }
     return;
@@ -76,8 +82,10 @@ async function renderSkuCards(skus, container) {
       thumb.src       = thumbSrc;
       thumb.onerror   = () => thumb.replaceWith(placeholder);
       row.appendChild(thumb);
-    } else {
+    } else if (s.imageUrl) {
       row.appendChild(placeholder);
+    } else {
+      card.classList.add('no-thumb');
     }
 
     const info    = document.createElement('div');

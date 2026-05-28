@@ -499,6 +499,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .option-info { padding: 8px 10px 10px; }
 .option-name { font-size: 14px; font-weight: 600; color: #1a1a2e; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
 .option-price { font-size: 13px; color: #888; margin-top: 3px; }
+/* 썸네일 없는 색상 카드 — 이미지 영역 제거, 컴팩트 레이아웃 */
+.option-card.no-thumb .option-info { padding: 10px 12px; }
+.option-card.no-thumb .option-name { font-size: 13px; }
 
 /* ── 다차원 SKU ── */
 .sku-dim-label { font-size: 11px; font-weight: 600; color: #666; margin: 10px 0 4px; grid-column: 1 / -1; }
@@ -511,6 +514,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .img-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .img-grid-item { position: relative; cursor: pointer; border-radius: 6px; overflow: hidden; }
 .img-grid-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border: 2px solid transparent; transition: all 0.15s; }
+.img-grid-item.crop-item img { object-fit: contain; background: #f0f0f0; }
 .img-grid-item:hover img { border-color: #cbd0d9; transform: scale(1.02); }
 .img-grid-item img.on { border-color: #10ac84; transform: scale(1.02); }
 .assign-badge { position: absolute; top: 4px; right: 4px; background: #10ac84; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }

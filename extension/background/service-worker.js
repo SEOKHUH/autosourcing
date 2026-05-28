@@ -17,22 +17,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-// ── 1688 탭 로딩 감지 → 즉시 페이지 인터셉터 주입 ────────────────────────────
-// document_start 타이밍에 executeScript(MAIN world)로 fetch/XHR 후킹.
-// 이렇게 해야 페이지의 API 호출을 놓치지 않음.
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status !== 'loading') return;
-  const url = tab.url || changeInfo.url || '';
-  if (!url.includes('1688.com')) return;
-
-  chrome.scripting.executeScript({
-    target: { tabId },
-    world: 'MAIN',
-    injectImmediately: true,
-    func: pageInterceptorFn,
-  }).catch(() => {});
-});
-
 // ── 툴바 클릭 → UI 탭 열기
 // 이미 열려있으면 해당 탭으로 포커스, 없으면 새 탭 생성
 chrome.action.onClicked.addListener(async (tab) => {
@@ -76,12 +60,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     case 'CLOSE_TAB': {
       if (sender.tab?.id) chrome.tabs.remove(sender.tab.id);
       break;
-    }
-
-    // UI → 서플라이어 허브 탭 열기 + 자동 등록 시작
-    case 'REGISTER_REQUEST': {
-      handleRegisterRequest(msg, sendResponse);
-      return true;
     }
 
     // UI → 서플라이어 허브 Draft API 임시저장 (CORS 우회용)
@@ -132,61 +110,21 @@ async function handleScrapeRequest(msg, sendResponse) {
   try {
     const url = msg.url;
 
-    // ── Plan A: background fetch (탭 없이) ────────────────────────────────────
-    broadcastToUI({ type: 'SCRAPE_LOG', text: '⏳ [Plan A] background fetch 시도 중...' });
+    broadcastToUI({ type: 'SCRAPE_LOG', text: '⏳ 1688 페이지 수집 중...' });
     const bgResult = await tryBackgroundFetch(url);
     if (bgResult) {
-      broadcastToUI({ type: 'SCRAPE_LOG', text: `✅ [Plan A] 성공 — SKU ${bgResult.skus?.length || 0}개, 이미지 ${bgResult.images?.length || 0}장` });
+      broadcastToUI({ type: 'SCRAPE_LOG', text: `✅ 수집 완료 — SKU ${bgResult.skus?.length || 0}개, 이미지 ${bgResult.images?.length || 0}장, 속성 ${bgResult.attributes?.length || 0}개` });
       broadcastToUI({ type: 'SCRAPE_DONE', result: bgResult });
       sendResponse({ ok: true });
       return;
     }
 
-    // ── Plan B: 탭 열기 + window.context ─────────────────────────────────────
-    broadcastToUI({ type: 'SCRAPE_LOG', text: '⚠️ [Plan A] 실패 → 탭 방식으로 전환' });
-    const tab = await findOrCreateTab(url, /1688\.com/);
-    await waitForTabLoad(tab.id);
-
-    let preloadedData = null;
-    try {
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        world: 'MAIN',
-        func: function() {
-          var ctx = window.context;
-          if (ctx && ctx.result && ctx.result.data && ctx.result.data.gallery &&
-              ctx.result.data.gallery.fields && ctx.result.data.gallery.fields.subject) {
-            try { return { src: 'context', data: JSON.parse(JSON.stringify(ctx)) }; }
-            catch(e) {}
-          }
-          return { src: 'not-found' };
-        },
-      });
-      if (results?.[0]?.result) preloadedData = results[0].result;
-    } catch (e) {
-      console.warn('[SW] executeScript 실패:', e.message);
-    }
-
-    // window.context 데이터 있으면 직접 처리 (탭 닫기)
-    if (preloadedData?.src === 'context') {
-      const result = mapContextData(preloadedData.data, null);
-      if (result?.title_cn) {
-        result.detail_images = await fetchDetailImages(result.detailUrl);
-        result.scrape_method = 'WindowContext';
-        result.sku_debug     = ['window-context'];
-        result.attr_debug    = ['tab-no-html'];
-        broadcastToUI({ type: 'SCRAPE_LOG', text: `✅ [Plan B] window.context 성공 — SKU ${result.skus?.length || 0}개` });
-        broadcastToUI({ type: 'SCRAPE_DONE', result });
-        chrome.tabs.remove(tab.id);
-        sendResponse({ ok: true });
-        return;
-      }
-    }
-
-    // ── 최종 폴백: DOM 스크래핑 (content script) ──────────────────────────────
-    broadcastToUI({ type: 'SCRAPE_LOG', text: '⚠️ window.context 없음 → DOM 스크래핑으로 전환' });
-    chrome.tabs.sendMessage(tab.id, { type: 'START_SCRAPE', url, tabId: tab.id, preloadedData });
-    sendResponse({ ok: true, tabId: tab.id });
+    // 실패 = 로그인 필요
+    const errMsg = '1688 로그인이 필요합니다. 아래 탭에서 로그인 후 다시 시도해주세요.';
+    broadcastToUI({ type: 'SCRAPE_LOG', text: `❌ ${errMsg}` });
+    broadcastToUI({ type: 'SCRAPE_ERROR', error: errMsg });
+    chrome.tabs.create({ url: 'https://login.1688.com/member/signin.htm' });
+    sendResponse({ ok: false, error: errMsg });
   } catch (e) {
     sendResponse({ ok: false, error: e.message });
   }
@@ -219,31 +157,6 @@ async function handleDownloadImages(urls, prefix, sendResponse) {
   }
 
   sendResponse({ ok: true, images: results });
-}
-
-// ── 서플라이어 허브 등록 ──────────────────────────────────────────────────────
-async function handleRegisterRequest(msg, sendResponse) {
-  try {
-    const tab = await chrome.tabs.create({
-      url: 'https://supplier.coupang.com/wing/products/registrations/v3/items/new',
-      active: true,
-    });
-
-    // 탭 로드 후 content script에 데이터 전달
-    chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-      if (tabId === tab.id && changeInfo.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        chrome.tabs.sendMessage(tab.id, {
-          type: 'START_REGISTER',
-          data: msg.data,
-        });
-      }
-    });
-
-    sendResponse({ ok: true, tabId: tab.id });
-  } catch (e) {
-    sendResponse({ ok: false, error: e.message });
-  }
 }
 
 // ── 서플라이어 허브 Draft API 임시저장 ───────────────────────────────────────
@@ -420,106 +333,6 @@ function broadcastToUI(msg) {
   });
 }
 
-// ── 유틸: 탭 찾기 또는 생성 ──────────────────────────────────────────────────
-async function findOrCreateTab(url, domainRegex) {
-  const tabs = await chrome.tabs.query({});
-  const existing = tabs.find(t => t.url && domainRegex.test(t.url));
-  if (existing) {
-    await chrome.tabs.update(existing.id, { url, active: true });
-    return existing;
-  }
-  return await chrome.tabs.create({ url, active: true });
-}
-
-// ── 유틸: 탭 로드 완료 대기 ──────────────────────────────────────────────────
-function waitForTabLoad(tabId) {
-  return new Promise((resolve) => {
-    function listener(id, changeInfo) {
-      if (id === tabId && changeInfo.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    }
-    chrome.tabs.onUpdated.addListener(listener);
-    // 이미 로드 완료 상태일 수도 있으므로 즉시 체크
-    chrome.tabs.get(tabId, (tab) => {
-      if (tab && tab.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    });
-  });
-}
-
-// ── 페이지 인터셉터 함수 (MAIN world 주입용) ──────────────────────────────────
-// chrome.tabs.onUpdated → executeScript({ world:'MAIN', func: pageInterceptorFn })
-// 로 1688 페이지 로딩 시작 즉시 실행됨.
-function pageInterceptorFn() {
-  if (window.__1688_hooked__) return;
-  window.__1688_hooked__ = true;
-
-  function isProduct(v) {
-    if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
-    return !!(v.subject || v.title || v.skuModel || v.skuPriceList || v.itemImages ||
-      (v.offerDetail   && (v.offerDetail.subject   || v.offerDetail.skuModel))  ||
-      (v.offerDetailVO && (v.offerDetailVO.subject  || v.offerDetailVO.skuModel)));
-  }
-
-  function postProduct(data, src) {
-    window.postMessage({ __type: '__1688_product__', payload: data, url: src }, '*');
-  }
-
-  // 글로벌 변수 즉시 체크
-  var GLOBALS = ['runParams', '__GLOBAL_DATA__', 'pageData', '_data_',
-                 '__pageInfo__', 'detailData', '__INIT_DATA__', 'offerDetailModel'];
-  for (var gi = 0; gi < GLOBALS.length; gi++) {
-    var g = window[GLOBALS[gi]];
-    var gd = g && (g.data || g);
-    var inner = gd && (gd.offerDetail || gd.offerDetailVO || gd.model);
-    if (isProduct(gd))    { postProduct(gd,    'global:'       + GLOBALS[gi]); return; }
-    if (isProduct(inner)) { postProduct(inner, 'global-inner:' + GLOBALS[gi]); return; }
-  }
-
-  // fetch / XHR 후킹
-  function probe(text, reqUrl) {
-    if (!text || (text[0] !== '{' && text[0] !== '[')) return;
-    try {
-      var root = JSON.parse(text);
-      console.log('[1688-intercept] API:', reqUrl.split('?')[0], '| top keys:', Object.keys(root).slice(0, 8));
-      var cands = [root, root.data, root.result, root.pageData, root.content,
-        root.data && root.data.offerDetail,
-        root.data && root.data.offerDetailVO,
-        root.data && root.data.model];
-      for (var i = 0; i < cands.length; i++) {
-        if (isProduct(cands[i])) {
-          console.log('[1688-intercept] ✅ 상품 데이터 발견! URL:', reqUrl.split('?')[0], '| keys:', Object.keys(cands[i]).slice(0, 15));
-          postProduct(cands[i], reqUrl); return;
-        }
-      }
-    } catch(e) {}
-  }
-
-  var _fetch = window.fetch;
-  window.fetch = function() {
-    return _fetch.apply(this, arguments).then(function(resp) {
-      resp.clone().text().then(function(t) { probe(t, resp.url); }).catch(function(){});
-      return resp;
-    });
-  };
-
-  var _open = XMLHttpRequest.prototype.open;
-  var _send = XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.open = function(m, u) {
-    this.__u = String(u || '');
-    return _open.apply(this, arguments);
-  };
-  XMLHttpRequest.prototype.send = function() {
-    var xhr = this;
-    xhr.addEventListener('load', function() { probe(xhr.responseText || '', xhr.__u || ''); });
-    return _send.apply(this, arguments);
-  };
-}
-
 // ── 유틸: ArrayBuffer → Base64 ───────────────────────────────────────────────
 function arrayBufferToBase64(buffer) {
   const bytes = new Uint8Array(buffer);
@@ -609,16 +422,25 @@ function extractWindowContext(html, debug = false) {
 }
 
 function parseAttributesFromHtml(html) {
+  const skip = new Set([
+    '항목 번호.', '항목번호', '품목 번호', '품목번호',
+    '색상', '사양', '상표', '브랜드', 'SKU', 'Item No.',
+    '수입할지 말지', '특허가 있나요?', '맞춤형 처리', '상자 수량',
+    '국경 간 수출을 위한 독점 공급원이 있습니까?',
+    '装箱数', '箱规',
+  ]);
   const attrs = [];
-  const skip = new Set(['항목 번호.', '항목번호', '품목 번호', '품목번호', '색상', '상표', '브랜드', 'SKU', 'Item No.']);
-  const re = /<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/gi;
+  const seen = new Set();
+  // 1688 HTML에 JSON 형태로 박힌 속성 객체: {"name":"재료","value":"플라스틱",...}
+  const re = /"name"\s*:\s*"([^"]+)"[^}]*?"value"\s*:\s*"([^"]+)"/g;
   let m;
   while ((m = re.exec(html)) !== null) {
-    const key = m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-    const val = m[2].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-    if (!key || !val || key.length > 25 || val.length > 200) continue;
-    if (skip.has(key) || /^\d+$/.test(key)) continue;
-    attrs.push({ name: key, value: val });
+    const name  = m[1].trim();
+    const value = m[2].trim();
+    if (!name || !value || name.length > 30 || value.length > 200) continue;
+    if (skip.has(name) || seen.has(name)) continue;
+    seen.add(name);
+    attrs.push({ name, value });
   }
   return attrs;
 }
@@ -647,24 +469,39 @@ function mapContextData(ctx, htmlText) {
     }
   }
 
-  const skus = [];
+  // SKU 옵션별 최고가를 Map에 저장 (색상·사양 차원 모두 포함)
+  const skuMap = new Map();
   let priceMin = Infinity;
   for (const [rawKey, item] of Object.entries(skuInfoMap)) {
     const key   = htmlDecodeStr(rawKey);
-    const name  = key.split('>')[0].trim();
+    const parts = key.split('>').map(p => p.trim()).filter(Boolean);
     const price = parseFloat(item.discountPrice || item.price || 0);
     if (price > 0 && price < priceMin) priceMin = price;
-    skus.push({ name, price, imageUrl: nameToImageUrl[name] || null, skuId: item.skuId });
+    for (const part of parts) {
+      const existing = skuMap.get(part);
+      if (!existing || price > existing.price) {
+        skuMap.set(part, { name: part, price, imageUrl: nameToImageUrl[part] || null, skuId: item.skuId });
+      }
+    }
   }
+  const skus = Array.from(skuMap.values());
   if (priceMin === Infinity) priceMin = 0;
 
   const sku_groups = skuProps.map(prop => ({
     dimension: prop.prop,
-    isColorDim: prop.value?.some(v => v.imageUrl),
+    isColorDim: prop.value?.some(v => v.imageUrl) || /颜色|色彩|色系/i.test(prop.prop || ''),
     items: (prop.value || []).map(v => ({ name: v.name, imageUrl: v.imageUrl || null })),
   }));
 
   const attributes = htmlText ? parseAttributesFromHtml(htmlText) : [];
+
+  // 무게 폴백: 속성에 없으면 pieceWeightScale에서 추출
+  if (!attributes.some(a => a.name === '무게')) {
+    const pieceInfo = data?.productPackInfo?.fields?.pieceWeightScale?.pieceWeightScaleInfo;
+    const weight_g = pieceInfo?.[0]?.weight ?? null;
+    if (weight_g !== null) attributes.push({ name: '무게', value: `${weight_g}g` });
+  }
+
   const detailUrl  = data.description?.fields?.detailUrl || '';
 
   return { title_cn: title, price_min: priceMin, images, skus, sku_groups, attributes, detailUrl };
@@ -677,8 +514,18 @@ async function fetchDetailImages(detailUrl) {
       headers: { 'Referer': 'https://detail.1688.com/', 'User-Agent': 'Mozilla/5.0' },
     });
     if (!resp.ok) return [];
-    const html = await resp.text();
-    const re = /<img[^>]+src=["']([^"']+)["']/gi;
+    let html = await resp.text();
+
+    // offer_details JS 변수 형태: var offer_details={"content":"<HTML 이스케이프>"}
+    const jsMatch = html.match(/var\s+offer_details\s*=\s*(\{[\s\S]*\})/);
+    if (jsMatch) {
+      try {
+        const data = JSON.parse(jsMatch[1]);
+        if (data.content) html = data.content;
+      } catch (e) {}
+    }
+
+    const re = /<img[^>]+(?:src|data-src)=["']([^"']+)["']/gi;
     const imgs = [];
     let m;
     while ((m = re.exec(html)) !== null) {
@@ -687,7 +534,7 @@ async function fetchDetailImages(detailUrl) {
       if (src.startsWith('//')) src = 'https:' + src;
       if (src.startsWith('http')) imgs.push(src);
     }
-    return [...new Set(imgs)].slice(0, 20);
+    return [...new Set(imgs)].slice(0, 40);
   } catch (e) {
     return [];
   }

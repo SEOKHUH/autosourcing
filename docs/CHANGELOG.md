@@ -2,6 +2,113 @@
 
 ---
 
+## 2026-05-14 — Step 4 색상 속성명 동적화 + Step 2/3 크롭 이미지 개선 (Claude Code)
+
+### 변경 내용
+
+**`extension/ui/modules/step4.js`**
+- 색상 속성명 동적화: 스키마 API `exposedAttributes.examples`에서 `/색상/` 매칭 속성명 자동 추출
+  - 카테고리에 따라 `'색상'` 또는 `'색상/항'` 등 다른 속성명 자동 사용
+  - 추출 실패 시 `'색상'` 폴백
+
+**`extension/ui/modules/step2-imagegrid.js`**
+- Step 3 이미지 그리드에 크롭 이미지(`state.croppedImageKeys`) 추가 표시
+- 크롭 이미지 아이템에 `crop-item` 클래스 부여
+
+**`extension/ui/index.css`**
+- `.img-grid-item.crop-item img`: `object-fit: contain` + 회색 배경 — 크롭 이미지 잘림 방지
+
+**`extension/background/service-worker.js`**
+- `fetchDetailImages`: `data-src` 속성도 함께 추출 (지연 로딩 이미지 대응)
+- 최대 추출 수: 20개 → 40개로 확대
+- `offer_details` JS 변수 형태(`var offer_details={"content":"..."}`) JSON 파싱 후 img 추출
+
+---
+
+## 2026-05-13 — 2D SKU 색상·사양 옵션 UX 개선 (Claude Code)
+
+### 변경 내용
+
+**`extension/ui/modules/step2-options.js`**
+- 이미지 없는 색상 카드: 빈 플레이스홀더 제거 → `no-thumb` 클래스 추가 (컴팩트 레이아웃)
+- 그룹 렌더 순서 정렬: 사양(칩) → 색상(카드) 순으로 표시 (사양 먼저 선택하는 흐름)
+
+**`extension/ui/modules/step1-form.js`**
+- `onSkuChange`: 사양 차원 옵션 선택 시 `f-spec` 자동 입력
+- `onSkuChange`: 가격 계산 시 사양 차원 우선 — 색상 선택해도 사양 가격 유지
+
+**`extension/ui/index.css`**
+- `.option-card.no-thumb` 스타일 추가 (이미지 없는 카드용 컴팩트 패딩)
+
+---
+
+## 2026-05-13 — SKU 가격/팝업/속성 수집 버그 3종 수정 (Claude Code)
+
+### 변경 내용
+
+**`extension/background/service-worker.js`**
+- `isColorDim`: 썸네일 이미지 유무 + 차원명 키워드(`颜色|色彩|色系`) 병행 체크로 변경
+  - 이전: 이미지 없는 색상 차원이 `false`로 잘못 분류되어 칩 렌더링 → 팝업 미표시
+- SKU 구성 로직: 단순 배열 → `Map` 기반 중복 제거로 변경
+  - 2D 제품(색상×사양)에서 모든 차원(색상+사양 둘 다) 항목을 `skus`에 포함
+  - 동일 옵션명은 최고가 기준으로 dedup → 사양 칩 선택 시 가격 업데이트 가능
+  - 초기 최저가 계산도 더 정확해짐
+- `parseAttributesFromHtml` skip 목록: `'사양'` 추가
+  - SKU 차원 메타데이터 "사양"이 속성으로 잘못 수집되어 f-spec에 모든 사양값이 합쳐서 들어가는 문제 해결
+
+**`extension/ui/modules/step2-options.js`**
+- `renderOptionCards`: `isColor` 판별에 차원명 키워드 체크 추가 (`색상|颜色|color` 등)
+  - 이미 스크랩된 제품(isColorDim=false인 구 데이터)에서도 런타임에 정상 동작
+
+---
+
+## 2026-05-13 — 사양/무게 수집 + Step 1 UI 편집 필드 추가 (Claude Code)
+
+### 변경 내용
+
+**`extension/background/service-worker.js`**
+- `parseAttributesFromHtml`: `装箱数`, `箱规` skip 목록 추가 (도매 포장 정보 필터링)
+- `mapContextData`: 무게 폴백 추가 — 속성에 `무게` 없으면 `pieceWeightScale.pieceWeightScaleInfo[0].weight`(g) 사용
+- 디버그 로그 제거 (`[productPackInfo]`, `[속성]`)
+- 속성 파싱 방식: `<td>` 구조 → HTML 내 JSON `"name"/"value"` 패턴 파싱으로 변경
+
+**`extension/ui/index.html`**
+- Step 1 폼에 `사양(f-spec)`, `무게(f-weight)` 입력 필드 추가 (g2 그리드, 재질 행 아래)
+
+**`extension/ui/modules/step1-form.js`**
+- `fillStep1`에서 사양/무게 자동 입력 추가 (속성 배열에서 이름 매칭)
+
+**`extension/ui/modules/workspace.js`**
+- `saveProgress`: `spec`, `weight` 필드 추가
+- `restoreProgress`: `f-spec`, `f-weight` 복원 추가
+- input 이벤트 리스너: `f-spec`, `f-weight` 추가
+
+**`extension/ui/modules/step4.js`**
+- executeScript args에 `spec`, `weight` 추가
+- 사이즈 exposedAttribute: `f-spec` 값 사용, 없으면 `'one size'` 폴백
+
+**문서**
+- `CLAUDE.md`: Step 1 UI 구조, 서플라이어 허브 사이즈 설명 업데이트
+- `docs/modules/step1.md`: fillStep1 함수 설명 업데이트
+- `docs/modules/step4.md`: 사이즈/무게 처리 설명 업데이트
+
+---
+
+## 2026-05-13 — Plan B 제거 + 로그인 에러 처리 개선 (Claude Code)
+
+### 변경 내용
+
+**`extension/background/service-worker.js`**
+- Plan B(탭 열기 + window.context) 코드 완전 삭제 — Plan A(BackgroundFetch)로 단일화
+- 삭제된 함수: `findOrCreateTab`, `waitForTabLoad`, `pageInterceptorFn`
+- 삭제된 리스너: `chrome.tabs.onUpdated` 1688 인터셉터 주입
+- 삭제된 핸들러: `handleRegisterRequest` / `REGISTER_REQUEST` (dead code)
+- Plan A 실패 시: "1688 로그인이 필요합니다" 에러 메시지 + 로그인 탭 자동 열기
+- `tryBackgroundFetch`: 속성 수집 결과 로그 추가 (`[속성] N개: [...]`)
+- 수집 완료 로그에 속성 수 포함 (`속성 N개`)
+
+---
+
 ## 2026-05-13 — window.context SSR 스크래퍼 전환 (Claude Code)
 
 ### 변경 내용

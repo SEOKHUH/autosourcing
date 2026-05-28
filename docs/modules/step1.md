@@ -6,10 +6,23 @@ Step 1 — 상품 정보 폼 채우기 + 가격 계산 + 카테고리 조회
 ## step1-form.js
 
 ### 주요 함수
-- `fillStep1(result)` — 크롤링 결과로 폼 초기값 채우기 (상품명 정제·재질·가격 계산)
+- `fillStep1(result)` — 크롤링 결과로 폼 초기값 채우기 (상품명 정제·재질·사양·무게·가격 계산)
 - `refineProductName(rawName)` — 룰 기반 필터링 후 Gemini API로 상품명 정제
 - `onSkuChange()` — 옵션 선택 변경 시 선택된 옵션의 최고가 기준으로 가격 재계산
 - `updatePriceDisplay(yuan, prices)` — 위안가·원가·공급가·판매가 화면 갱신
+
+### fillStep1 자동 입력 필드
+| 필드 ID | 소스 | 비고 |
+|---------|------|------|
+| `f-name` | `title_kr` | Gemini API로 정제 |
+| `f-material` | 속성 중 재질 키워드 매칭 | 영문 약자 대문자화 |
+| `f-spec` | 속성 `name === '사양'` | 그대로 입력 |
+| `f-weight` | 속성 `name === '무게'` | 그대로 입력 |
+| `f-supply` / `f-selling` | 가격 계산 | PriceCalculator |
+
+### 편집값 저장/복원
+- `workspace.js`의 `saveProgress`에서 `f-spec`, `f-weight` 값도 저장
+- `restoreProgress`에서 복원 (새로고침·스텝 이동 후에도 유지)
 
 ### 가격 계산 로직
 - 원가 = 위안가 × 400

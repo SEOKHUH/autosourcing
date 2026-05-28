@@ -88,7 +88,7 @@ export async function openDetailView(itemId) {
     goToStep(1);
   }
 
-  ['f-name','f-supply','f-selling','f-qty','f-material','f-option','f-category-id'].forEach(id => {
+  ['f-name','f-supply','f-selling','f-qty','f-material','f-option','f-category-id','f-spec','f-weight'].forEach(id => {
     $(id).addEventListener('input', () => saveProgress());
   });
 }
@@ -160,6 +160,8 @@ export function saveProgress(immediate = false) {
       material:   $('f-material').value,
       option:     $('f-option').value,
       categoryId: $('f-category-id').value,
+      spec:       $('f-spec').value,
+      weight:     $('f-weight').value,
     };
     saveQueue();
   };
@@ -176,6 +178,8 @@ export async function restoreProgress(p) {
   if (p.material   !== undefined) $('f-material').value    = p.material;
   if (p.option     !== undefined) $('f-option').value      = p.option;
   if (p.categoryId !== undefined) $('f-category-id').value = p.categoryId;
+  if (p.spec       !== undefined) $('f-spec').value        = p.spec;
+  if (p.weight     !== undefined) $('f-weight').value      = p.weight;
 
   state.selectedOptions   = p.selectedOptions || [];
   state.optionCustomNames = { ...(p.optionCustomNames || {}) };

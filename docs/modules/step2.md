@@ -8,6 +8,9 @@ Step 2 — 옵션 카드 렌더링, 이미지 그리드, 드래그 크롭 UI
 ### 주요 함수
 - `renderOptionCards(skus, skuGroups)` — 옵션 카드 4열 그리드 렌더링
   - skuGroups가 2개 이상이면 다차원 SKU (색상 카드 + 사양 칩 혼합 레이아웃)
+  - 색상 차원 판별 우선순위: `isColorDim` 플래그 → 아이템에 이미지 → 차원명 키워드(`색상|颜色|color` 등)
+  - 색상 차원: 카드 형태로 렌더링 → 클릭 시 옵션명 편집 팝업 표시
+  - 사양 차원(이미지 없고 색상 키워드 없음): 칩 형태로 렌더링 → 클릭 시 바로 선택/해제
 - `activateOption(optionName)` — 옵션 카드 active 스타일 토글
 - `showOptionPicker(imgKey, imgEl, itemEl, e)` — 이미지 클릭 시 옵션 선택 팝업 표시
   - 색상 옵션만 필터링해 표시 (사양 옵션은 이미지 매칭 불필요)

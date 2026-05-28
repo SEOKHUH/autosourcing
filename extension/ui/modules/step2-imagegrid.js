@@ -35,6 +35,26 @@ export async function renderImageGrid() {
     item.appendChild(img);
     grid.appendChild(item);
   }
+
+  for (const key of (state.croppedImageKeys || [])) {
+    const rec = await IDB.get(key);
+    if (!rec) continue;
+
+    const url  = IDB.toObjectUrl(rec.buffer, rec.mimeType);
+    const item = document.createElement('div');
+    item.className   = 'img-grid-item crop-item';
+    item.dataset.key = key;
+
+    const img = document.createElement('img');
+    img.src   = url;
+    img.title = key;
+    img.onerror = () => { if (item.parentNode) grid.removeChild(item); };
+
+    refreshImageGridItem(item, img, key);
+    img.addEventListener('click', (e) => { if (_showOptionPicker) _showOptionPicker(key, img, item, e); });
+    item.appendChild(img);
+    grid.appendChild(item);
+  }
 }
 
 export function refreshImageGridItem(item, img, key) {

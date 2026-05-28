@@ -148,6 +148,7 @@ export async function startRegister() {
           ];
           let noticeItems = p.noticeItems || [];
           let adCertValue = '';
+          let colorAttrName = '색상';
           try {
             const sr = await fetch(`/sr/schema/api/get-default-schemaform?internalDisplayCode=${p.displayCatCode}&useCustomizedJsonSchema=true`);
             const sj = await sr.json();
@@ -157,6 +158,14 @@ export async function startRegister() {
               if (noticeProp?.examples?.[0]) {
                 noticeItems = noticeProp.examples[0].map(n => n.noticeItemName).filter(Boolean);
                 logs.push(`✅ notices ${noticeItems.length}개 스키마에서 로드`);
+              }
+              const exposedEx = ss.properties?.productPage?.properties?.commonAttributes?.properties?.exposedAttributes?.examples?.[0];
+              if (Array.isArray(exposedEx)) {
+                const colorAttr = exposedEx.find(a => /색상/.test(a.attributeName || ''));
+                if (colorAttr?.attributeName) {
+                  colorAttrName = colorAttr.attributeName;
+                  logs.push(`✅ 색상 속성명: ${colorAttrName}`);
+                }
               }
             }
           } catch (e) {
@@ -183,7 +192,7 @@ export async function startRegister() {
               brand: '브랜드 없음',
               commonAttributes: {
                 exposedAttributes: [
-                  ...(sku.optionName ? [{ attributeName: '색상', attributeValue: (p.optionCustomNames && p.optionCustomNames[sku.optionName]) || sku.optionName }] : []),
+                  ...(sku.optionName ? [{ attributeName: colorAttrName, attributeValue: (p.optionCustomNames && p.optionCustomNames[sku.optionName]) || sku.optionName }] : []),
                   { attributeName: '수량', attributeValue: p.qty },
                   { attributeName: '사이즈', attributeValue: (p.attributes || []).find(a => a.name === '사양')?.value || 'one size' },
                 ],
@@ -294,6 +303,8 @@ export async function startRegister() {
           labelImage: recToB64(labelRec),
           detailImage: recToB64(detailRec),
           attributes: state.currentScrapeResult?.attrs_translated || [],
+          spec:   document.getElementById('f-spec')?.value   || '',
+          weight: document.getElementById('f-weight')?.value || '',
         }],
       }, (res) => {
         if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));

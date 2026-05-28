@@ -7,6 +7,7 @@
 - `closeDetailView()` — 워크스페이스 닫기 + 진행상황 저장
 - `goToStep(n)` — 스텝 이동 (스테퍼 UI 갱신, Step 3 진입 시 genAllMedia 자동 호출)
 - `saveProgress(immediate?)` — 현재 폼값·선택 옵션·이미지맵을 queueData에 저장 (800ms 디바운스)
+  - 저장 항목: `step`, `selectedOptions`, `optionCustomNames`, `croppedImageKeys`, `optionImageMap`, `name`, `supply`, `selling`, `qty`, `material`, `option`, `categoryId`, `spec`, `weight`
 - `restoreProgress(p)` — 저장된 진행상황으로 폼·옵션카드·이미지그리드 복원
 
 ## 상태 의존 (state.js)
