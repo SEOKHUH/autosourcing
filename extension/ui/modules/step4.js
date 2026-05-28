@@ -4,7 +4,7 @@
 import { state } from './state.js';
 import { $, appendGlobalLog } from './utils.js';
 import { IDB } from './idb.js';
-import { saveQueue } from './queue.js';
+import { saveQueue, renderQueue } from './queue.js';
 
 export async function startRegister() {
   if (!state.currentScrapeResult) { alert('상품 정보가 없습니다'); return; }
@@ -315,7 +315,9 @@ export async function startRegister() {
     if (results?.logs) results.logs.forEach(appendGlobalLog);
     if (results?.ok) {
       item.draftDocId = results.docId;
+      item.status = 'done';
       saveQueue();
+      renderQueue();
       $('register-done').classList.remove('hidden');
     } else {
       appendGlobalLog('❌ 임시저장 실패: ' + (results?.error || '알 수 없는 오류'));

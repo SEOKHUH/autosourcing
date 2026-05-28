@@ -14,40 +14,50 @@
   <script src="../vendor/html2canvas.min.js"></script>
   <!-- JSZip: 견적서 ZIP/XLSX 파싱용 -->
   <script src="../vendor/jszip.min.js"></script>
+  <!-- Tesseract.js: 상세이미지 중국어 OCR (로컬 번들, MV3 호환) -->
+  <script src="../vendor/tesseract.min.js"></script>
 
   <link rel="stylesheet" href="index.css" />
 </head>
 
 <body>
 
-  <!-- 헤더 (상단 고정) -->
-  <div class="header">
-    <div class="header-inner">
-      헤오르 <em>자동 소싱</em> · 1688 → 쿠팡 서플라이어 허브
+  <!-- URL 직접 추가 섹션 (별도 컨테이너) -->
+  <div id="url-section" class="url-section-bar">
+    <div class="url-row url-section-inner">
+      <input id="queue-url" type="text" placeholder="https://detail.1688.com/offer/..." />
+      <button class="btn-primary" id="btn-add">추가</button>
     </div>
   </div>
 
   <!-- 분할 레이아웃 컨테이너 -->
   <div class="split-layout">
 
-    <!-- ── 1. 마스터 뷰 (좌측): 대기열 ── -->
+    <!-- ── 1. 마스터 뷰 (좌측): 탭 기반 패널 ── -->
     <div class="sidebar" id="sidebar">
-      <div class="card" style="margin-bottom:12px; flex-shrink:0;">
-        <div class="card-title">① 1688 상품 추가</div>
-        <div class="url-row">
-          <input id="queue-url" type="text" placeholder="https://detail.1688.com/offer/..." />
-          <button class="btn-red" id="btn-add">추가</button>
+
+      <!-- 탭 헤더 -->
+      <div class="sidebar-tabs">
+        <div class="sidebar-tab active" id="tab-candidates">
+          소싱 후보 <span id="badge-candidates" class="tab-badge">0</span>
+        </div>
+        <div class="sidebar-tab" id="tab-queue">
+          대기열 <span id="badge-queue" class="tab-badge">0</span>
         </div>
       </div>
 
-      <!-- 대기열 리스트 공간 (세로 스크롤) -->
-      <div class="card queue-card-container">
-        <div class="queue-header">
-          <div class="card-title" style="margin-bottom:0">② 소싱 대기열</div>
-          <div class="queue-mgmt-btns">
-            <button class="btn-sm btn-ghost" id="btn-clear-done">완료 삭제</button>
-            <button class="btn-sm btn-ghost btn-ghost-danger" id="btn-clear-all">전체 삭제</button>
-          </div>
+      <!-- 소싱 후보 패널 (기본 표시) -->
+      <div id="panel-candidates" class="tab-panel">
+        <div id="candidates-list">
+          <div class="cand-empty">쿠팡에서 "+ 소싱" 버튼으로 후보를 추가하세요</div>
+        </div>
+      </div>
+
+      <!-- 대기열 패널 (기본 숨김) -->
+      <div id="panel-queue" class="tab-panel hidden">
+        <div class="queue-header-bar">
+          <button class="btn-sm btn-ghost" id="btn-clear-done">완료 삭제</button>
+          <button class="btn-sm btn-ghost btn-ghost-danger" id="btn-clear-all">전체 삭제</button>
         </div>
         <div class="queue-scroll-vertical" id="queue-scroll">
           <div class="queue-empty-msg">추가된 상품이 없어요</div>
@@ -61,6 +71,7 @@
       <!-- 네비게이션 헤더 -->
       <div class="workspace-header">
         <span id="modal-title" style="display:none"></span>
+        <a id="btn-1688-link" class="btn-ghost btn-sm hidden" target="_blank" rel="noopener">1688 ↗</a>
         <button id="btn-modal-retry" class="btn-ghost btn-sm">단독 재크롤링</button>
         <button id="btn-modal-close" class="btn-ghost btn-sm btn-close">✕ 닫기</button>
       </div>
@@ -116,7 +127,7 @@
                 <label>카테고리 ID (KAN ID)</label>
                 <div style="display:flex;gap:6px;align-items:center">
                   <input id="f-category-id" type="text" placeholder="예: 9263" style="flex:1" />
-                  <button class="btn-blue btn-sm" id="btn-fetch-category">조회</button>
+                  <button class="btn-ghost btn-sm" id="btn-fetch-category">조회</button>
                 </div>
                 <div id="category-result" class="category-result hidden"></div>
                 <input id="f-category" type="hidden" />
@@ -229,23 +240,26 @@
 
         <!-- [STEP 4] 최종 론칭 -->
         <div class="step-section" id="sec-step4" style="padding-bottom:120px;">
-          <div class="step-badge" style="background:#e94560;">Step 4</div>
+          <div class="step-badge">Step 4</div>
           <h3 class="step-section-title">쿠팡 론칭</h3>
 
-          <div class="card" style="text-align:center; padding:50px 20px;">
-            <h4 style="margin-bottom:12px; font-size:20px; font-weight:700; color:#1a1a2e;">모든 설정이 완료되었습니다!</h4>
-            <p style="color:#666;font-size:14px;line-height:1.6;margin-bottom:30px;">
-              아래 '등록 시작' 버튼을 누르면 이 창의 데이터가 쿠팡 서플라이어 허브로 전송됩니다.<br>
-              (로그인이 안 되어 있다면 먼저 해주세요)
-            </p>
-            <button class="btn-red" id="btn-start-register"
-              style="width:100%; max-width:400px; padding:20px; font-size:18px; font-weight:700; border-radius:12px; box-shadow:0 6px 16px rgba(233,69,96,0.25);">
-              💾 서플라이어 허브 임시저장
+          <div class="card">
+            <div class="card-title">쿠팡 서플라이어 허브 임시저장</div>
+            <table class="step4-summary">
+              <tbody>
+                <tr><td class="s4-label">상품명</td><td class="s4-val" id="s4-name">-</td></tr>
+                <tr><td class="s4-label">카테고리</td><td class="s4-val" id="s4-category">-</td></tr>
+                <tr><td class="s4-label">옵션</td><td class="s4-val" id="s4-option">-</td></tr>
+                <tr><td class="s4-label">공급가</td><td class="s4-val" id="s4-supply">-</td></tr>
+                <tr><td class="s4-label">판매가</td><td class="s4-val" id="s4-selling">-</td></tr>
+                <tr><td class="s4-label">무게</td><td class="s4-val" id="s4-weight">-</td></tr>
+              </tbody>
+            </table>
+            <button class="btn-primary" id="btn-start-register" style="width:100%;padding:16px;font-size:15px;font-weight:700;border-radius:10px;margin-top:24px;">
+              서플라이어 허브 임시저장
             </button>
-
-            <div class="done-box hidden" id="register-done"
-              style="margin-top:20px; max-width:400px; margin:0 auto mt-20;">
-              ✅ 임시저장 완료! 서플라이어 허브 → "중간 저장 불러오기"에서 불러오세요.
+            <div class="done-box hidden" id="register-done" style="margin-top:16px;">
+              ✓ 저장 완료 — 서플라이어 허브에서 "중간 저장 불러오기" 해주세요
             </div>
           </div>
         </div>
@@ -255,13 +269,62 @@
 
   </div><!-- .split-layout -->
 
+  <!-- ── 플로팅 로그 버튼 ── -->
+  <button id="log-fab" title="로그 보기">
+    <span id="log-fab-dot" class="log-fab-dot hidden"></span>
+    ≡
+  </button>
+
+  <!-- ── 텍스트 제거 모달 (Step 2 크롭 이미지에서 중국어 제거) ── -->
+  <div id="text-eraser-modal" class="text-eraser-backdrop hidden">
+    <div class="text-eraser-modal">
+      <div class="text-eraser-toolbar">
+        <div class="te-toolbar-title">텍스트 제거</div>
+        <div class="te-toolbar-actions">
+          <button class="btn-ghost btn-sm" id="te-btn-detect">🔍 자동 감지</button>
+          <button class="btn-ghost btn-sm" id="te-btn-preview">👁 미리보기</button>
+          <button class="btn-ghost btn-sm" id="te-btn-undo">↩ 되돌리기</button>
+          <button class="btn-ghost btn-sm" id="te-btn-cancel">✕ 취소</button>
+          <button class="btn-primary btn-sm" id="te-btn-apply">✓ 적용</button>
+        </div>
+      </div>
+      <div class="text-eraser-canvas-wrap">
+        <canvas id="te-canvas"></canvas>
+      </div>
+      <div class="text-eraser-hint">
+        빈 공간을 <b>드래그</b>해서 박스 추가 · 박스 위 <b>✕</b>를 클릭해서 삭제 · 적용 전에는 <b>미리보기</b>로 결과 확인
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 썸네일 크롭 모달 ── -->
+  <div id="thumbnail-cropper-modal" class="text-eraser-backdrop hidden">
+    <div class="text-eraser-modal">
+      <div class="text-eraser-toolbar">
+        <div class="te-toolbar-title">이미지 크롭</div>
+        <div class="te-toolbar-actions">
+          <button class="btn-ghost btn-sm" id="tc-btn-square">☐ 1:1</button>
+          <button class="btn-ghost btn-sm" id="tc-btn-reset">↻ 초기화</button>
+          <button class="btn-ghost btn-sm" id="tc-btn-cancel">✕ 취소</button>
+          <button class="btn-primary btn-sm" id="tc-btn-apply">✓ 적용</button>
+        </div>
+      </div>
+      <div class="text-eraser-canvas-wrap">
+        <canvas id="tc-canvas"></canvas>
+      </div>
+      <div class="text-eraser-hint">
+        이미지 위에서 <b>드래그</b>해서 자를 영역 지정 · <b>1:1</b> 활성화 시 정사각형 비율 고정
+      </div>
+    </div>
+  </div>
+
   <!-- ── 글로벌 로그 바 ── -->
-  <div id="global-log-bar">
+  <div id="global-log-bar" class="hidden">
     <div id="log-bar-header" class="log-bar-header">
       <span id="log-bar-last" class="log-bar-last-text">(대기 중)</span>
-      <button class="log-toggle" id="btn-log-toggle">▲</button>
+      <button class="log-close-btn" id="btn-log-close">✕</button>
     </div>
-    <div class="log-bar-content hidden" id="log-bar-content"></div>
+    <div class="log-bar-content" id="log-bar-content"></div>
   </div>
 
   <script type="module" src="index.js"></script>

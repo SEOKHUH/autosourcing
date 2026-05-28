@@ -13,8 +13,10 @@ let _fillStep1            = null;
 let _genAllMedia          = null;
 let _refreshImageGridItem = null;
 let _renderCroppedItem    = null;
+let _fetchCategory        = null;
+let _restoreCategoryUI    = null;
 
-export function initWorkspace({ renderOptionCards, renderImageGrid, renderDetailImgList, fillStep1, genAllMedia, refreshImageGridItem, renderCroppedItem }) {
+export function initWorkspace({ renderOptionCards, renderImageGrid, renderDetailImgList, fillStep1, genAllMedia, refreshImageGridItem, renderCroppedItem, fetchCategory, restoreCategoryUI }) {
   _renderOptionCards    = renderOptionCards;
   _renderImageGrid      = renderImageGrid;
   _renderDetailImgList  = renderDetailImgList;
@@ -22,6 +24,8 @@ export function initWorkspace({ renderOptionCards, renderImageGrid, renderDetail
   _genAllMedia          = genAllMedia;
   _refreshImageGridItem = refreshImageGridItem;
   _renderCroppedItem    = renderCroppedItem;
+  _fetchCategory        = fetchCategory || null;
+  _restoreCategoryUI    = restoreCategoryUI || null;
 }
 
 export async function openDetailView(itemId) {
@@ -39,6 +43,17 @@ export async function openDetailView(itemId) {
   }
 
   $('modal-title').textContent = (item.title_kr || '').slice(0, 30);
+
+  const link1688 = document.getElementById('btn-1688-link');
+  if (link1688) {
+    if (item.url) {
+      link1688.href = item.url;
+      link1688.classList.remove('hidden');
+    } else {
+      link1688.removeAttribute('href');
+      link1688.classList.add('hidden');
+    }
+  }
 
   state.activeOptionName     = null;
   state.selectedOptions      = [];
@@ -64,6 +79,8 @@ export async function openDetailView(itemId) {
   $('register-done').classList.add('hidden');
 
   document.querySelector('.split-layout').classList.add('has-workspace');
+  const urlSection = document.getElementById('url-section');
+  if (urlSection) urlSection.classList.add('hidden');
   const workspace = $('workspace');
   workspace.classList.remove('hidden');
   void workspace.offsetWidth;
@@ -79,10 +96,23 @@ export async function openDetailView(itemId) {
     if (_renderDetailImgList) await _renderDetailImgList();
 
     const restored = await restoreProgress(item.progress);
+
+    // 진행상황에 categoryId가 없으면 후보에서 가져온 categoryId로 자동 입력
+    if (!$('f-category-id').value && item.categoryId) {
+      $('f-category-id').value = item.categoryId;
+    }
+    // 카테고리 경로 복원
     if (item.categoryPath && $('f-category-id').value) {
       const pathStr = item.categoryPath.split('>').map(s => s.trim()).filter(Boolean).join(' > ');
       $('f-category').value = pathStr;
     }
+    // 세부 카테고리 드롭다운 복원 (저장된 candidates가 있으면) 또는 최초 자동 조회
+    if (item.categoryCodeCandidates?.length && _restoreCategoryUI) {
+      _restoreCategoryUI(item.id);
+    } else if ($('f-category-id').value && !item.categoryPath && _fetchCategory) {
+      _fetchCategory();
+    }
+
     goToStep(restored && item.progress?.step ? item.progress.step : 1);
   } else {
     goToStep(1);
@@ -101,6 +131,8 @@ export function closeDetailView() {
   const workspace = $('workspace');
   workspace.classList.remove('show');
   document.querySelector('.split-layout').classList.remove('has-workspace');
+  const urlSection = document.getElementById('url-section');
+  if (urlSection) urlSection.classList.remove('hidden');
   setTimeout(() => { if (!state.isModalOpen) workspace.classList.add('hidden'); }, 400);
   renderQueue();
 }
@@ -137,6 +169,23 @@ export function goToStep(n) {
       if (_renderImageGrid) _renderImageGrid();
     }
     if (_genAllMedia) _genAllMedia();
+  }
+
+  if (n === 4) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '-'; };
+    const name = ('헤오르 ' + ($('f-name').value || '')).trim();
+    const selectEl = document.querySelector('#display-code-select-wrap select');
+    const category = selectEl?.options[selectEl.selectedIndex]?.text || $('f-category').value || '-';
+    const option = $('f-option').value || '-';
+    const supply = $('f-supply').value ? Number($('f-supply').value).toLocaleString() + '원' : '-';
+    const selling = $('f-selling').value ? Number($('f-selling').value).toLocaleString() + '원' : '-';
+    const weight = $('f-weight').value || '-';
+    set('s4-name', name);
+    set('s4-category', category);
+    set('s4-option', option);
+    set('s4-supply', supply);
+    set('s4-selling', selling);
+    set('s4-weight', weight);
   }
 }
 

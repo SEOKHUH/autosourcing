@@ -16,6 +16,9 @@ export function renderQueue() {
   const scroll = $('queue-scroll');
   const items  = Object.values(state.queueData).sort((a, b) => b.ts - a.ts);
 
+  const badgeEl = document.getElementById('badge-queue');
+  if (badgeEl) badgeEl.textContent = items.length;
+
   if (!items.length) {
     scroll.innerHTML = '<div class="queue-empty-msg">추가된 상품이 없어요</div>';
     return;
@@ -73,6 +76,32 @@ export function updateQueueItemStatus(itemId, status) {
   state.queueData[id].status = status;
   saveQueue();
   renderQueue();
+}
+
+// 소싱 후보에서 자동 큐 추가 (1688 URL 연결 완료 시 호출)
+export async function addToQueueFromCandidate(candidate) {
+  const { url1688, productName, thumbnailUrl, categoryId, id: candidateId } = candidate;
+  if (!url1688) return;
+
+  const itemId = 'item_' + Date.now();
+  state.queueData[itemId] = {
+    id: itemId, url: url1688, status: 'scraping',
+    title_kr: productName || '', thumb: thumbnailUrl || null,
+    logs: [], ts: Date.now(), candidateId,
+    ...(categoryId ? { categoryId } : {}),
+  };
+  await saveQueue();
+  renderQueue();
+  state.currentItemId = itemId;
+  renderQueue();
+  appendGlobalLog(`소싱 후보 크롤링 시작: ${productName || url1688}`);
+
+  chrome.runtime.sendMessage({ type: 'SCRAPE_REQUEST', url: url1688, itemId }, (resp) => {
+    if (!resp?.ok) {
+      appendGlobalLog('❌ 스크래핑 요청 실패: ' + (resp?.error || ''));
+      updateQueueItemStatus(itemId, 'error');
+    }
+  });
 }
 
 export async function addToQueue() {

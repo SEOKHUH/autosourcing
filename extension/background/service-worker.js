@@ -80,6 +80,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       handleRefineProductName(msg.name, sendResponse);
       return true;
     }
+
+    // 쿠팡 소싱 후보 관리
+    case 'ADD_SOURCING_CANDIDATE': {
+      handleAddCandidate(msg.data, sendResponse);
+      return true;
+    }
+    case 'GET_PENDING_CANDIDATES': {
+      handleGetPendingCandidates(sendResponse);
+      return true;
+    }
+    case 'LINK_1688_TO_CANDIDATE': {
+      handleLinkCandidate(msg.candidateId, msg.url, sendResponse);
+      return true;
+    }
+    case 'REMOVE_SOURCING_CANDIDATE': {
+      handleRemoveCandidate(msg.candidateId, sendResponse);
+      return true;
+    }
   }
 });
 
@@ -341,6 +359,47 @@ function arrayBufferToBase64(buffer) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
+}
+
+// ── 소싱 후보 관리 ────────────────────────────────────────────────────────────
+
+async function getCandidates() {
+  const { sourcingCandidates = [] } = await chrome.storage.local.get('sourcingCandidates');
+  return sourcingCandidates;
+}
+
+async function saveCandidates(list) {
+  await chrome.storage.local.set({ sourcingCandidates: list });
+}
+
+async function handleAddCandidate(data, sendResponse) {
+  const list = await getCandidates();
+  list.push(data);
+  await saveCandidates(list);
+  broadcastToUI({ type: 'CANDIDATE_ADDED', candidate: data });
+  sendResponse({ ok: true });
+}
+
+async function handleGetPendingCandidates(sendResponse) {
+  const list = await getCandidates();
+  sendResponse(list.filter(c => c.status === 'pending'));
+}
+
+async function handleLinkCandidate(candidateId, url1688, sendResponse) {
+  const list = await getCandidates();
+  const idx = list.findIndex(c => c.id === candidateId);
+  if (idx === -1) { sendResponse({ ok: false, error: '후보 없음' }); return; }
+  list[idx] = { ...list[idx], url1688, status: 'linked' };
+  await saveCandidates(list);
+  broadcastToUI({ type: 'CANDIDATE_LINKED', candidate: list[idx] });
+  sendResponse({ ok: true });
+}
+
+async function handleRemoveCandidate(candidateId, sendResponse) {
+  const list = await getCandidates();
+  await saveCandidates(list.filter(c => c.id !== candidateId));
+  broadcastToUI({ type: 'CANDIDATE_REMOVED', candidateId });
+  sendResponse({ ok: true });
 }
 
 // ── window.context 기반 스크래퍼 헬퍼 ────────────────────────────────────────

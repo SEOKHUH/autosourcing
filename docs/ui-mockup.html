@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>헤오르 AutoSourcing — UI 목업 v2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter','Noto Sans KR',sans-serif; background: #e8eaf0; color: #1a1a2e; font-size: 13px; line-height: 1.5; padding: 32px 24px; }
+
+  :root {
+    --bg: #f4f6fb; --surface: #fff; --border: #e2e4e9;
+    --text: #1a1a2e; --muted: #6b7280;
+    --primary: #0ea5e9; --primary-hover: #0284c7; --primary-light: #e0f2fe;
+    --danger: #e94560; --success: #16a34a;
+  }
+
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .page-sub { color: var(--muted); font-size: 12px; margin-bottom: 40px; }
+
+  .section { margin-bottom: 60px; }
+  .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .caption { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+
+  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ── 디바이스 프레임 ── */
+  .frame {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07); flex-shrink: 0;
+  }
+
+  /* ── 공통 컴포넌트 ── */
+  .btn { display: inline-flex; align-items: center; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; height: 34px; padding: 0 14px; font-family: inherit; white-space: nowrap; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-ghost { background: var(--surface); border: 1px solid var(--border); color: #555; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-sm { height: 28px; font-size: 11px; padding: 0 10px; }
+  .btn-xs { height: 24px; font-size: 10px; padding: 0 8px; border-radius: 6px; }
+
+  .badge { display: inline-flex; align-items: center; border-radius: 6px; font-size: 10px; font-weight: 600; padding: 2px 6px; }
+  .b-linked { background: var(--primary-light); color: var(--primary-hover); }
+  .b-pending { background: #f0f2f8; color: var(--muted); }
+  .b-done { background: #f0fdf4; color: var(--success); }
+  .b-review { background: #fef9e7; color: #b45309; }
+
+  .tab-cnt { border-radius: 10px; padding: 1px 6px; font-size: 10px; margin-left: 4px; }
+  .tc-on { background: var(--primary); color: #fff; }
+  .tc-off { background: #e2e4e9; color: var(--muted); }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 12px; }
+  .tab { padding: 9px 12px 7px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  .tab.on { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* ── URL 입력 컨테이너 (별도) ── */
+  .url-container {
+    background: var(--surface); border-radius: 10px;
+    border: 1px solid var(--border); padding: 10px 12px;
+    display: flex; gap: 8px;
+  }
+  .url-input {
+    flex: 1; border: 1px solid var(--border); border-radius: 8px;
+    height: 34px; padding: 0 10px; font-size: 12px; color: var(--muted);
+    background: var(--bg); outline: none; font-family: inherit;
+  }
+
+  /* ── 카드 패널 ── */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .panel-bg { background: var(--bg); }
+
+  .cand-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .cand-thumb { width: 42px; height: 42px; border-radius: 8px; background: #e8eaf0; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .cand-body { flex: 1; min-width: 0; }
+  .cand-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cand-sub { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+  .cand-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+
+  .q-toolbar { display: flex; justify-content: flex-end; gap: 6px; padding: 7px 12px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .q-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+  .q-item:hover { background: var(--bg); }
+  .q-thumb { width: 42px; height: 42px; border-radius: 8px; background: #e8eaf0; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .q-body { flex: 1; min-width: 0; }
+  .q-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .q-status { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── 스플릿 레이아웃 ── */
+  .split { display: flex; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+  .sp-left { width: 264px; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; background: var(--surface); }
+  .sp-right { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+
+  /* ── 워크스페이스 ── */
+  .ws-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+  .ws-title { font-size: 13px; font-weight: 700; }
+  .ws-actions { display: flex; gap: 6px; }
+  .stepper { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+  .st-item { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .st-item.on { color: var(--primary); }
+  .st-item.done { color: var(--success); }
+  .st-num { width: 20px; height: 20px; border-radius: 50%; border: 2px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .st-item.on .st-num { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .st-item.done .st-num { background: var(--success); border-color: var(--success); color: #fff; }
+  .st-line { flex: 1; height: 1px; background: var(--border); margin: 0 6px; min-width: 10px; }
+  .st-line.done { background: var(--success); }
+  .ws-body { flex: 1; overflow-y: auto; padding: 16px; }
+  .ws-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+
+  /* ── Step 1 폼 ── */
+  .sec-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+  .fg { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .fg-row { display: grid; gap: 10px; margin-bottom: 10px; }
+  .fg-row.c2 { grid-template-columns: 1fr 1fr; }
+  .fg-row.c3 { grid-template-columns: 1fr 1fr 1fr; }
+  .fl { font-size: 11px; font-weight: 600; color: var(--muted); }
+  .fi { border: 1px solid var(--border); border-radius: 8px; height: 34px; padding: 0 10px; font-size: 12px; background: #fff; outline: none; font-family: inherit; color: var(--text); }
+  .fi-row { display: flex; gap: 6px; }
+  .fi-row .fi { flex: 1; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .price-bar { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+  .price-bar b { color: var(--text); font-weight: 700; }
+
+  .opt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .opt-card { border: 2px solid var(--border); border-radius: 10px; padding: 8px 6px; text-align: center; background: #fff; }
+  .opt-card.sel { border-color: var(--primary); background: var(--primary-light); }
+  .opt-thumb { aspect-ratio: 1; background: #e8eaf0; border-radius: 6px; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .opt-name { font-size: 10px; font-weight: 600; }
+  .opt-price { font-size: 10px; color: var(--muted); }
+
+  /* ── Step 2 크롭 ── */
+  .crop-layout { display: flex; gap: 0; height: 100%; }
+  .crop-left { width: 200px; border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .crop-right { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+  .crop-result-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 4px; }
+  .crop-result-title { font-size: 11px; font-weight: 700; margin-bottom: 8px; color: var(--muted); }
+  .cropped-list { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cropped-item { width: 52px; height: 52px; background: #e8eaf0; border-radius: 8px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 18px; position: relative; }
+  .crop-del { position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; background: var(--danger); color: #fff; border-radius: 50%; font-size: 8px; display: flex; align-items: center; justify-content: center; }
+
+  .detail-img-item { background: var(--surface); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .detail-img-item img-ph { display: block; width: 100%; background: #e8eaf0; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+  .detail-ph { width: 100%; background: linear-gradient(180deg, #eaecf0 0%, #dde0e8 100%); display: flex; align-items: center; justify-content: center; font-size: 36px; border-radius: 8px; }
+
+  /* ── Step 3 결과 확인 ── */
+  .match-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .match-item { text-align: center; }
+  .match-thumb { width: 58px; height: 58px; background: #e8eaf0; border-radius: 10px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 3px; }
+  .match-thumb.sel { border-color: var(--primary); }
+  .match-lbl { font-size: 10px; font-weight: 600; }
+  .match-lbl.sel { color: var(--primary); }
+
+  .preview-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+  .preview-ttl { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+  .label-tbl { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; font-size: 11px; }
+  .label-row { display: flex; border-bottom: 1px solid var(--border); }
+  .label-row:last-child { border-bottom: none; }
+  .lk { background: var(--bg); color: var(--muted); font-weight: 600; padding: 5px 10px; width: 80px; flex-shrink: 0; border-right: 1px solid var(--border); }
+  .lv { padding: 5px 10px; }
+  .detail-stack { display: flex; flex-direction: column; gap: 6px; }
+  .detail-img-row { width: 100%; border-radius: 8px; overflow: hidden; background: #e8eaf0; display: flex; align-items: center; justify-content: center; font-size: 32px; }
+
+  /* ── Step 4 ── */
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .sum-row { display: flex; gap: 8px; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f0f2f8; }
+  .sum-row:last-child { border-bottom: none; }
+  .sk { color: var(--muted); width: 70px; flex-shrink: 0; }
+  .done-msg { text-align: center; padding: 10px; font-size: 12px; color: var(--success); font-weight: 600; }
+
+  /* ── 화살표 설명 ── */
+  .flow-arrow { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: 11px; color: var(--muted); }
+  .arrow { font-size: 18px; color: var(--primary); }
+</style>
+</head>
+<body>
+
+<h1>헤오르 AutoSourcing — UI 목업 v2</h1>
+<p class="page-sub">Primary #0ea5e9 · Danger #e94560 · 모노톤 베이스 #f4f6fb</p>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 1: 기본 화면 — 워크스페이스 닫힘               -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">화면 1–2 · 기본 상태 (워크스페이스 닫힘)</div>
+
+  <div class="row">
+
+    <!-- 화면 1: 소싱 후보 탭 -->
+    <div class="col">
+      <div class="caption">화면 1 — 소싱 후보 탭</div>
+      <div style="width:300px;display:flex;flex-direction:column;gap:10px;">
+
+        <!-- URL 입력: 별도 컨테이너 -->
+        <div class="url-container">
+          <input class="url-input" type="text" value="https://detail.1688.com/offer/...">
+          <button class="btn btn-primary btn-sm">추가</button>
+        </div>
+
+        <!-- 소싱 후보 / 대기열 패널: 별도 컨테이너 -->
+        <div class="panel">
+          <div class="tabs">
+            <div class="tab on">소싱 후보<span class="tab-cnt tc-on">3</span></div>
+            <div class="tab">대기열<span class="tab-cnt tc-off">2</span></div>
+          </div>
+          <div class="panel-bg">
+            <div class="cand-card">
+              <div class="cand-thumb">🛍️</div>
+              <div class="cand-body">
+                <div class="cand-name">타올라 네일 손목 받침대</div>
+                <div class="cand-sub">45,000원 <span class="badge b-linked">✓ 연결됨</span></div>
+              </div>
+              <div class="cand-actions">
+                <button class="btn btn-primary btn-xs">크롤링 시작</button>
+              </div>
+            </div>
+            <div class="cand-card">
+              <div class="cand-thumb">🔧</div>
+              <div class="cand-body">
+                <div class="cand-name">VETUS 일자형 핀셋 ESD-16</div>
+                <div class="cand-sub">2,940원 <span class="badge b-pending">대기중</span></div>
+              </div>
+              <div class="cand-actions">
+                <button class="btn btn-ghost btn-xs">직접입력</button>
+              </div>
+            </div>
+            <div class="cand-card">
+              <div class="cand-thumb">🧴</div>
+              <div class="cand-body">
+                <div class="cand-name">스필로글루 파츠글루 접착제</div>
+                <div class="cand-sub">1,100원 <span class="badge b-pending">대기중</span></div>
+              </div>
+              <div class="cand-actions">
+                <button class="btn btn-ghost btn-xs">직접입력</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 흐름 설명 -->
+    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding-top:60px;">
+      <div style="font-size:11px;color:var(--muted);text-align:center;">"크롤링 시작"<br>클릭 시</div>
+      <div class="arrow">→</div>
+      <div style="font-size:11px;color:var(--primary);font-weight:600;text-align:center;">해당 후보가<br>대기열로 이동</div>
+    </div>
+
+    <!-- 화면 2: 대기열 탭 (후보 → 대기열 이동 후) -->
+    <div class="col">
+      <div class="caption">화면 2 — 대기열 탭 (크롤링 시작 후)</div>
+      <div style="width:300px;display:flex;flex-direction:column;gap:10px;">
+
+        <div class="url-container">
+          <input class="url-input" type="text" value="https://detail.1688.com/offer/...">
+          <button class="btn btn-primary btn-sm">추가</button>
+        </div>
+
+        <div class="panel">
+          <div class="tabs">
+            <div class="tab">소싱 후보<span class="tab-cnt tc-off">2</span></div>
+            <div class="tab on">대기열<span class="tab-cnt tc-on">1</span></div>
+          </div>
+          <div class="panel-bg">
+            <div class="q-toolbar">
+              <button class="btn btn-ghost btn-xs">완료 삭제</button>
+              <button class="btn btn-danger btn-xs">전체 삭제</button>
+            </div>
+            <!-- 이동된 항목 (클릭하면 워크스페이스 열림) -->
+            <div class="q-item" style="background:#f0f9ff;border-left:3px solid var(--primary);">
+              <div class="q-thumb">🛍️</div>
+              <div class="q-body">
+                <div class="q-name">타올라 네일 손목 받침대</div>
+                <div class="q-status"><span class="badge b-review">검토중</span> &nbsp;Step 1 · 정보 검수</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--primary);text-align:center;">↑ 항목 클릭 → 우측 워크스페이스 열림</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 2: 워크스페이스 열림 — URL 입력 숨김, 스플릿  -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">화면 3 · 워크스페이스 열림 — URL 입력 숨김, 좌우 분할만</div>
+
+  <div class="caption">화면 3 — 스플릿 레이아웃 (대기열 탭에서 항목 클릭 시)</div>
+  <div class="split" style="width:780px;height:480px;">
+    <!-- 좌: 대기열 패널만 -->
+    <div class="sp-left">
+      <div class="tabs">
+        <div class="tab" style="font-size:11px;">소싱 후보<span class="tab-cnt tc-off" style="font-size:9px;">2</span></div>
+        <div class="tab on" style="font-size:11px;">대기열<span class="tab-cnt tc-on" style="font-size:9px;">1</span></div>
+      </div>
+      <div style="flex:1;overflow-y:auto;background:var(--bg);">
+        <div class="q-item" style="background:#f0f9ff;border-left:3px solid var(--primary);">
+          <div class="q-thumb" style="width:38px;height:38px;font-size:16px;">🛍️</div>
+          <div class="q-body">
+            <div class="q-name" style="font-size:11px;">타올라 네일 손목 받침대</div>
+            <div class="q-status" style="font-size:10px;"><span class="badge b-review" style="font-size:9px;">검토중</span> Step 1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 우: 워크스페이스 -->
+    <div class="sp-right">
+      <div class="ws-header">
+        <div class="ws-title">타올라 네일 손목 받침대</div>
+        <div class="ws-actions">
+          <button class="btn btn-ghost btn-sm">단독 재크롤링</button>
+          <button class="btn btn-ghost btn-sm">✕ 닫기</button>
+        </div>
+      </div>
+      <div class="stepper">
+        <div class="st-item on"><div class="st-num">1</div>정보 검수</div>
+        <div class="st-line"></div>
+        <div class="st-item"><div class="st-num">2</div>이미지 크롭</div>
+        <div class="st-line"></div>
+        <div class="st-item"><div class="st-num">3</div>결과 확인</div>
+        <div class="st-line"></div>
+        <div class="st-item"><div class="st-num">4</div>론칭</div>
+      </div>
+      <div class="ws-body" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;">
+        ↓ Step 콘텐츠 (화면 4–7 참조)
+      </div>
+      <div class="ws-footer">
+        <div></div>
+        <button class="btn btn-primary btn-sm">다음 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 3: Step 콘텐츠                               -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">화면 4–7 · Step 콘텐츠 상세</div>
+
+  <div class="row" style="align-items:flex-start;">
+
+    <!-- 화면 4: Step 1 — 정보 검수 -->
+    <div class="col">
+      <div class="caption">화면 4 — Step 1 · 정보 검수</div>
+      <div class="frame" style="width:440px;padding:16px;">
+        <div class="sec-title">정보 및 가격 검수</div>
+        <div class="fg-row c2">
+          <div class="fg" style="grid-column:span 2">
+            <div class="fl">상품명 (한국어)</div>
+            <input class="fi" type="text" value="[헤오르] 엄선된 일본식 매니큐어 손 베개 네일...">
+          </div>
+          <div class="fg">
+            <div class="fl">카테고리 ID (KAN ID)</div>
+            <div class="fi-row">
+              <input class="fi" type="text" value="563201">
+              <button class="btn btn-ghost btn-sm">조회</button>
+            </div>
+            <div style="font-size:11px;color:#0284c7;margin-top:3px;">뷰티 > 네일 > 네일아트소품 (56501) ▼</div>
+          </div>
+          <div class="fg">
+            <div class="fl">옵션</div>
+            <input class="fi" type="text" value="블랙, 화이트">
+          </div>
+          <div class="fg">
+            <div class="fl">세트 / 수량</div>
+            <input class="fi" type="text" value="1개">
+          </div>
+          <div class="fg">
+            <div class="fl">주요 재질</div>
+            <input class="fi" type="text" value="실리콘">
+          </div>
+          <div class="fg">
+            <div class="fl">사양</div>
+            <input class="fi" type="text" value="120 × 80mm">
+          </div>
+          <div class="fg">
+            <div class="fl">무게</div>
+            <input class="fi" type="text" value="85g">
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="price-bar">¥17 → 원가 <b>6,800원</b> → 공급가 <b>9,800원</b> → 판매가 <b>16,400원</b></div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px;">1688 옵션 고르기</div>
+        <div class="opt-grid">
+          <div class="opt-card">
+            <div class="opt-thumb">🌸</div>
+            <div class="opt-name">분홍색</div>
+            <div class="opt-price">¥17</div>
+          </div>
+          <div class="opt-card sel">
+            <div class="opt-thumb">💙</div>
+            <div class="opt-name">파란색</div>
+            <div class="opt-price">¥17</div>
+          </div>
+          <div class="opt-card">
+            <div class="opt-thumb">💛</div>
+            <div class="opt-name">노란색</div>
+            <div class="opt-price">¥20</div>
+          </div>
+          <div class="opt-card">
+            <div class="opt-thumb">❤️</div>
+            <div class="opt-name">빨간색</div>
+            <div class="opt-price">¥18</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 화면 5: Step 2 — 이미지 크롭 (세로 스크롤) -->
+    <div class="col">
+      <div class="caption">화면 5 — Step 2 · 상세이미지 크롭 (세로 스크롤)</div>
+      <div class="frame" style="width:420px;height:540px;display:flex;flex-direction:column;">
+        <!-- 상단 고정: 크롭 결과 -->
+        <div style="padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">크롭된 이미지 <span style="color:var(--primary);">(상단 고정)</span></div>
+          <div class="cropped-list">
+            <div class="cropped-item">🖼️<div class="crop-del">×</div></div>
+            <div class="cropped-item">🖼️<div class="crop-del">×</div></div>
+            <div class="cropped-item" style="border-style:dashed;background:var(--bg);font-size:14px;color:var(--muted);">+</div>
+          </div>
+        </div>
+        <!-- 하단: 상세 이미지 세로 스크롤 + 드래그 크롭 -->
+        <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg);">
+          <div style="font-size:11px;color:var(--muted);text-align:center;padding:4px 0;">이미지 위에서 드래그하여 크롭 영역 선택</div>
+          <!-- 상세 이미지 1 -->
+          <div class="detail-img-item">
+            <div class="detail-ph" style="height:180px;">🖼️<br><span style="font-size:11px;color:var(--muted);margin-top:4px;">상세 이미지 1</span></div>
+          </div>
+          <!-- 선택 영역 표시 예시 -->
+          <div class="detail-img-item" style="border-color:var(--primary);position:relative;">
+            <div class="detail-ph" style="height:200px;">🖼️<br><span style="font-size:11px;color:var(--muted);margin-top:4px;">상세 이미지 2</span></div>
+            <!-- 드래그 선택 영역 -->
+            <div style="position:absolute;top:30px;left:20px;right:20px;height:80px;border:2px solid var(--primary);background:rgba(14,165,233,0.1);border-radius:4px;pointer-events:none;">
+              <div style="position:absolute;top:-18px;left:0;font-size:10px;color:var(--primary);font-weight:600;">드래그 선택 중</div>
+            </div>
+          </div>
+          <div class="detail-img-item">
+            <div class="detail-ph" style="height:160px;">🖼️<br><span style="font-size:11px;color:var(--muted);margin-top:4px;">상세 이미지 3</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Step 3, 4 -->
+  <div class="row" style="margin-top:24px;align-items:flex-start;">
+
+    <!-- 화면 6: Step 3 — 결과 확인 -->
+    <div class="col">
+      <div class="caption">화면 6 — Step 3 · 결과 확인</div>
+      <div class="frame" style="width:440px;height:580px;overflow-y:auto;">
+        <div style="padding:16px;">
+          <div class="sec-title">결과 확인</div>
+
+          <!-- 대표 이미지 매칭 -->
+          <div class="preview-card">
+            <div class="preview-ttl">대표 이미지 매칭</div>
+            <div class="match-row">
+              <div class="match-item">
+                <div class="match-thumb">🌸</div>
+                <div class="match-lbl">분홍색</div>
+              </div>
+              <div class="match-item">
+                <div class="match-thumb sel">💙</div>
+                <div class="match-lbl sel">파란색 ✓</div>
+              </div>
+              <div class="match-item">
+                <div class="match-thumb">💛</div>
+                <div class="match-lbl">노란색</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 라벨 이미지 -->
+          <div class="preview-card">
+            <div class="preview-ttl">라벨 이미지 미리보기</div>
+            <div class="label-tbl">
+              <div class="label-row"><div class="lk">상품명</div><div class="lv">엄선된 일본식 매니큐어 손 베개</div></div>
+              <div class="label-row"><div class="lk">색상</div><div class="lv">파란색</div></div>
+              <div class="label-row"><div class="lk">수량</div><div class="lv">1개</div></div>
+              <div class="label-row"><div class="lk">재질</div><div class="lv">실리콘</div></div>
+              <div class="label-row"><div class="lk">제조국</div><div class="lv">중국 (Made in China)</div></div>
+              <div class="label-row"><div class="lk">수입자</div><div class="lv">헤오르</div></div>
+            </div>
+          </div>
+
+          <!-- 상세페이지 이미지 — 실제 상세페이지처럼 세로 배치 -->
+          <div class="preview-card">
+            <div class="preview-ttl">상세페이지 이미지 미리보기 <span style="color:var(--primary);">(세로 순서대로)</span></div>
+            <div class="detail-stack">
+              <div class="detail-img-row" style="height:120px;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);">
+                  <span style="font-size:28px;">🖼️</span>
+                  <span style="font-size:10px;">크롭 이미지 1</span>
+                </div>
+              </div>
+              <div class="detail-img-row" style="height:120px;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);">
+                  <span style="font-size:28px;">🖼️</span>
+                  <span style="font-size:10px;">크롭 이미지 2</span>
+                </div>
+              </div>
+              <div class="detail-img-row" style="height:120px;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);">
+                  <span style="font-size:28px;">🖼️</span>
+                  <span style="font-size:10px;">크롭 이미지 3</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 화면 7: Step 4 — 쿠팡 론칭 -->
+    <div class="col">
+      <div class="caption">화면 7 — Step 4 · 쿠팡 론칭</div>
+      <div class="frame" style="width:380px;padding:16px;">
+        <div class="sec-title">쿠팡 서플라이어 허브 임시저장</div>
+        <div class="summary-card">
+          <div class="sum-row"><span class="sk">상품명</span><span>엄선된 일본식 매니큐어 손 베개...</span></div>
+          <div class="sum-row"><span class="sk">카테고리</span><span>뷰티 > 네일 > 네일아트소품 (56501)</span></div>
+          <div class="sum-row"><span class="sk">옵션</span><span>파란색 / 분홍색</span></div>
+          <div class="sum-row"><span class="sk">공급가</span><span>9,800원</span></div>
+          <div class="sum-row"><span class="sk">판매가</span><span>16,400원</span></div>
+          <div class="sum-row"><span class="sk">무게</span><span>85g</span></div>
+        </div>
+        <div style="text-align:center;margin-bottom:12px;">
+          <button class="btn btn-primary" style="height:42px;font-size:13px;padding:0 28px;">서플라이어 허브 임시저장</button>
+        </div>
+        <div class="done-msg">✓ 저장 완료 — 서플라이어 허브에서 중간 저장 불러오기 해주세요</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,5 +1,8 @@
 // 전역 상태 — 모든 모듈이 이 객체를 import해서 읽고 씀
 export const state = {
+  // 소싱 후보
+  sourcingCandidates: [],
+
   // 대기열 & 스크래핑
   currentItemId: null,
   currentScrapeResult: null,

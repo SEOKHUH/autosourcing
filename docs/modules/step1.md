@@ -42,7 +42,11 @@ Step 1 — 상품 정보 폼 채우기 + 가격 계산 + 카테고리 조회
   - 정규식으로 `(숫자코드)` 패턴 추출 → `displayCategoryCode` 확보
   - 후보 1개: `queueData[id].displayCategoryCode` 직접 저장 + `fetchNoticeSchema` 호출
   - 후보 복수: `renderDisplayCodeSelect`로 드롭다운 UI 표시
-- `renderDisplayCodeSelect(candidates, itemId, resultEl, tabId)` — 세부 카테고리 드롭다운 렌더링
+- `renderDisplayCodeSelect(candidates, itemId, resultEl, tabId, savedCode?)` — 세부 카테고리 드롭다운 렌더링
+  - `savedCode`: 이전에 선택한 `displayCategoryCode` → 드롭다운 선택값 자동 복원
+  - `tabId` null이면 fetchNoticeSchema 호출 생략 (복원 전용 모드)
+- `restoreCategoryUI(itemId)` — 재조회 없이 `queueData[id].categoryCodeCandidates`로 드롭다운 복원 (export)
+  - 워크스페이스 재열기 시 `workspace.js` → 콜백으로 호출
 - `fetchNoticeSchema(displayCode, tabId)` — 스키마 API에서 noticeNumber + noticeItems 동시 추출
   - 호출 엔드포인트: `/sr/schema/api/get-default-schemaform?internalDisplayCode=${code}&useCustomizedJsonSchema=true`
   - 반환: `{ noticeNumber, noticeItems }` (noticeItems = 항목 이름 문자열 배열)
@@ -51,14 +55,20 @@ Step 1 — 상품 정보 폼 채우기 + 가격 계산 + 카테고리 조회
 ### 저장되는 queueData 필드
 - `categoryPath` — 카테고리 전체 경로 문자열
 - `categoryId` — KAN 카테고리 ID
+- `categoryCodeCandidates` — 세부 카테고리 후보 배열 `[{ path, code }]` (드롭다운 복원용)
 - `displayCategoryCode` — 세부 카테고리 숫자 코드 (Step 4에서 사용)
 - `productNoticeNumber` — 상품고시 번호 (Step 4에서 사용)
 - `productNoticeItems` — 상품정보제공고시 항목 이름 배열 (Step 4 notices 동적 구성에 사용)
 
 ### 주의사항
-- 모든 supplier.coupang.com API는 CORS 차단 → `executeScript` MAIN world 방식으로 우회
+- `fetchCategory`는 Cookie header 수동 주입 방식 사용 (`getCoupangCookies` → `Cookie: ...` 헤더)
+  - `credentials: 'include'` 사용 불가: chrome-extension:// 오리진을 서버가 CORS 거부
+  - Chrome Extension은 forbidden header(Cookie) 예외 적용 → 정상 동작
+  - `Accept: 'application/json'` 필수 — 없으면 서버가 HTML 반환
+- `saveCategoryMeta` API(`/qvt/v3/kan-categories/download-quotation`)는 `executeScript` MAIN world 방식으로 우회 (CORS)
 - displayCategoryCode는 XLSX sharedStrings.xml에서 `경로 > 경로 (숫자코드)` 패턴으로 추출
 - `productNoticeItems`가 비어있으면 Step 4에서 5개 공통 항목으로 폴백
+- 워크스페이스 재열기 시 `categoryCodeCandidates` 있으면 재조회 없이 복원 (네트워크 요청 생략)
 
 ## 상태 의존 (state.js)
 - 읽기: `currentModalItemId`, `queueData`, `currentScrapeResult`

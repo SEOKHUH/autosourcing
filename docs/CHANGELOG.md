@@ -2,6 +2,354 @@
 
 ---
 
+## 2026-05-28 — 상세페이지 중국어 텍스트 제거 기능 추가 (Claude Code)
+
+### 배경
+쿠팡 상품 등록 시 상세페이지 이미지에 중국어가 포함되면 안 됨. Step 2에서 크롭한 상세 이미지에 남아있는 1688 중국어 텍스트를 제거하는 기능 추가.
+
+### 채택안: D안 (OCR 자동 감지 + 박스 수정 + 적응형 인페인팅)
+- Tesseract.js로 중국어 텍스트 자동 감지 → 빨간 박스 표시
+- 사용자가 박스 추가/삭제로 수정 후 인페인팅 적용
+- 외부 API 비용 없음, 익스텐션 내부 처리
+
+### 변경 내용
+
+**Tesseract.js + WASM 로컬 번들** (5종 신규, ~26MB)
+- `extension/vendor/tesseract.min.js` (65KB)
+- `extension/vendor/tesseract-worker.min.js` (121KB)
+- `extension/vendor/tesseract-core-lstm.wasm.js` (3.8MB)
+- `extension/vendor/tesseract-core-lstm.wasm` (2.7MB)
+- `extension/vendor/tessdata/chi_sim.traineddata.gz` (19MB)
+
+**`extension/manifest.json`**
+- CSP `script-src`에 `'wasm-unsafe-eval'` 추가 (WASM 컴파일 필수)
+- `web_accessible_resources.resources`에 `vendor/tessdata/*` 명시 추가
+
+**신규 모듈**
+- `extension/ui/modules/ocr-worker.js` — Tesseract.js 싱글톤 워커. 최초 1회만 모델 로드, 이후 캐싱. `workerBlobURL: false` 필수 (MV3 CSP가 blob URL 차단).
+- `extension/ui/modules/inpaint.js` — 적응형 인페인팅. 박스 외곽 픽셀 샘플링 후 단색/세로 그라데이션/가로 그라데이션 자동 분기. 경계 Clamping으로 이미지 가장자리 박스 처리.
+- `extension/ui/modules/step2-text-eraser.js` — 모달 + 캔버스 인터랙션. 좌표 보정(Scale Ratio), No-Mode 인터랙션(드래그=생성, ✕ 클릭=삭제), 단어 박스 줄 단위 자동 병합(`mergeNearbyBoxes`), undo 스택, 미리보기 토글. OCR 시 박스 오버레이 없는 오프스크린 캔버스 사용.
+
+**`extension/ui/modules/step2-cropper.js`**
+- `renderCroppedItem`에 "텍스트 제거" 버튼 추가. 클릭 시 모달 열고, 콜백으로 새 dataURL 받으면 `state.croppedImages[i]` 교체 + IDB 갱신 + 썸네일 새로고침 + `saveProgress()`.
+
+**`extension/ui/index.html`**
+- `<script src="../vendor/tesseract.min.js">` 추가
+- 텍스트 제거 모달 DOM 추가 (`#text-eraser-modal`)
+
+**`extension/ui/index.css`**
+- `.crop-erase-btn` — 크롭 아이템 hover 시 하단에 표시되는 파란 버튼
+- `.text-eraser-backdrop` — `backdrop-filter: blur(4px)` 글래스모피즘
+- `.text-eraser-modal` — 둥근 모서리 + 그림자
+- `.text-eraser-canvas-wrap` — 다크 그레이 배경 (`#2a2d35`)
+- `.text-eraser-toolbar`, `.text-eraser-hint` 등
+
+### 핵심 디테일
+- `'wasm-unsafe-eval'` CSP — WASM 컴파일에 필수
+- `workerBlobURL: false` — MV3 CSP에서 blob: URL 차단되므로 워커 파일 직접 사용
+- 캔버스 좌표 보정 — CSS 크기와 내부 해상도 차이 보정 (`scaleX/scaleY`)
+- 박스 병합 — Tesseract 단어 박스를 줄 단위로 자동 통합
+- 픽셀 샘플링 Clamping — 박스가 이미지 가장자리에 있을 때 좌표 범위 보호
+- OCR 시 오프스크린 캔버스 사용 — 화면 캔버스의 빨간 박스 오버레이가 OCR 입력에 노출되지 않도록
+
+---
+
+## 2026-05-28 — 전체 UI 스타일 일관성 리팩토링 및 가이드 동기화 (Antigravity)
+
+### 변경 내용
+
+**`extension/ui/index.css`**
+- 디자인 시스템 변수 추가 (`:root`): 테두리 두께(`1px`), 테두리 색상(`#e2e4e9`, `#edf0f5`), 스크롤바 너비(`5px`), 스크롤바 색상(`#cbd0d9`) 변수 선언.
+- 테두리(Border) 통일: `.q-card`, `.cand-card`, 인풋 및 버튼 래퍼, 옵션 카드 등의 테두리를 `1.5px`에서 `1px`로 축소하고 일관성 있게 정돈.
+- 버튼(Button) 크기 및 스타일 규격화:
+  - 기본 버튼: `height: 36px`, `font-size: 13px`, `padding: 0 16px`로 통일 (기존 ~40px 렌더링 수정).
+  - Small 버튼: `height: 28px`, `font-size: 12px`, `padding: 0 10px`로 통일 (기존 ~30px 렌더링 수정).
+  - `.btn-danger` 클래스(배경 `#e94560`, 호버 `#d63b56`, 액티브 `#b93148`) 추가로 가이드 라인의 Danger 클래스 부합.
+- 인풋(Input) 요소 규격화: `input`, `select`, `textarea` 높이 `36px`, 폰트 크기 `13px`, 패딩 `8px 12px`로 축소하여 촘촘하고 정교한 폼 구축 (기존 ~44px 렌더링 수정).
+- 호버(Hover) 피드백 통일: 전역 `button:hover`의 `translateY(-1px)` 움직임을 제거하고 제자리에서 배경색/테두리 색상만 자연스럽게 변경되는 플랫 디자인으로 정립.
+- 스크롤바(Scrollbar) 규격화: 대기열 리스트, 워크스페이스, 옵션 목록 등 산발적이던 너비를 `5px`, 스크롤 칩 색상을 `#cbd0d9`로 단일화.
+
+---
+
+## 2026-05-28 — 워크스페이스 헤더 버튼 디자인 및 호버 이벤트 통일 (Antigravity)
+
+### 변경 내용
+
+**`extension/ui/index.css`**
+- `.workspace-header .btn-ghost` 스타일 규칙 추가:
+  - 버튼 높이를 `30px`로 통일하고 가로 패딩 `12px` 적용.
+  - 테두리를 투명(`border: 1px solid transparent`)으로 설정하고, 배경색을 연한 회색(`#f4f6fb`)으로 적용하여 통일된 플랫 디자인 구현.
+  - 폰트 크기 `12px` (`btn-sm` 기준)로 통일하여 닫기 버튼이 크게 보이던 현상 해결.
+  - `:hover` 및 `:active` 상태에서 배경색(`#e2e4e9`, `#d0d2d6`)이 부드럽게 전환되도록 설정.
+  - 전역 `button` 태그에 선언된 호버 시 `translateY(-1px)` 이동 및 `brightness(0.95)` 필터를 `!important`로 오버라이드하여, 마우스 오버 시 미세하게 움직이거나 어두워지던 호버 불일치 현상 완전 해결.
+
+---
+
+## 2026-05-27 — 배너 썸네일 잘림 수정 (Claude Code)
+
+### 변경 내용
+
+**`extension/content_scripts/coupang_search.js`**
+- `.heaor-banner-thumb` CSS: `object-fit:cover` → `object-fit:contain`
+- 이미지 비율이 정사각형이 아닌 경우(폴백 img 선택 시) 잘리던 문제 해소
+
+**`extension/content_scripts/scraper_1688.js`**
+- 동일하게 `object-fit:contain` 적용
+
+---
+
+## 2026-05-27 — 1688 원본 링크 기능 추가 (Claude Code)
+
+### 변경 내용
+
+**`extension/ui/modules/candidates.js`**
+- 연결된 후보 카드에 "1688 보기" 버튼 추가 (크롤링 시작 버튼 앞)
+- `url1688` 없으면 버튼 비활성화
+- 클릭 시 `window.open`으로 새 탭 열기
+
+**`extension/ui/index.html`**
+- 워크스페이스 헤더에 `<a id="btn-1688-link">` 추가 (초기 hidden, 재크롤링 버튼 앞)
+
+**`extension/ui/modules/workspace.js`**
+- `openDetailView()` 내 `item.url` 있으면 링크 href 세팅 + hidden 해제
+
+---
+
+## 2026-05-27 — 쿠팡 배너 디자인 통일 + SPA 지속성 + 토글 핸들 (Claude Code)
+
+### 변경 내용
+
+**`extension/content_scripts/coupang_search.js`**
+- 배너 디자인 1688 기준으로 통일 (흰색 배경, 스카이블루 액션컬러)
+- 카드 썸네일: `img.fw-aspect-square` 셀렉터 + `currentSrc` 사용으로 lazy-load URL 정상 추출
+- CSS `!important` class `.heaor-banner-thumb` 주입으로 Coupang 페이지 CSS 오버라이드
+- SPA 페이지 이동 후 배너 재생성: `document.body.contains(_bannerEl)` 체크
+- MutationObserver로 배너 제거 감지 → 자동 재주입
+- 배너 토글 핸들 추가: 클릭으로 접기/펼치기, `localStorage`로 상태 영속
+- 페이지 초기화 시 `GET_PENDING_CANDIDATES`로 storage에서 후보 복원
+- 카드 ✕ 및 전체 닫기 시 `REMOVE_SOURCING_CANDIDATE` 메시지 전송으로 storage 동기화
+- 카드 클릭 시 해당 상품 페이지(`coupangUrl`) 새 탭으로 열기
+
+**`extension/content_scripts/scraper_1688.js`**
+- 동일한 배너 스타일 적용 (흰색 배경, `#0ea5e9` 버튼)
+- 배너 텍스트 "소싱 시작 →" → "URL 연결 →"
+
+**`extension/manifest.json`**
+- coupang_search.js matches: 상품 상세 URL만 → `https://www.coupang.com/*` (전 페이지)
+
+---
+
+## 2026-05-15 — 쿠팡 소싱 배너 + 1688 배너 디자인 통일 (Claude Code)
+
+### 변경 내용
+
+**`extension/content_scripts/coupang_search.js`**
+- 소싱 후보 배너 추가: "+ 소싱 추가" 클릭 시 쿠팡 검색 페이지 상단에 누적 배너 표시
+  - 썸네일 + 이름 카드 슬라이더 + 개수 배지 + 전체 닫기
+  - 후보가 없으면 배너 자동 숨김, 개별 카드 ✕ 제거 가능
+
+**`extension/content_scripts/scraper_1688.js`**
+- 배너 디자인 UI 규칙에 맞게 통일
+  - 배경: `#1a1a2e` (어두운) → `#fff` + `border-bottom:1.5px solid #e2e4e9`
+  - 버튼: `#e94560` → `#0ea5e9` (빨강은 삭제 전용)
+  - 선택 카드 테두리/배경: 빨강 → 스카이블루 (`#0ea5e9`)
+  - 비선택 카드 배경: 반투명 흰색 → `#f4f6fb`
+  - 상품명 색상: `#fff` → `#333`
+
+---
+
+## 2026-05-15 — UI 개선 + Step 4 개편 + 버그 수정 (Claude Code)
+
+### 변경 내용
+
+**`extension/ui/index.html`**
+- Step 4 배지 빨강(`#e94560`) → `#1a1a2e` 통일 (빨강은 삭제 전용 규칙 준수)
+- Step 4 레이아웃 개편: 중앙 텍스트 방식 → 요약 테이블 카드 (상품명·카테고리·옵션·공급가·판매가·무게)
+
+**`extension/ui/index.css`**
+- `btn-step-prev`: 큰 타원(`border-radius:50px`) → ghost 버튼 스타일로 변경
+- Step 4 요약 테이블 스타일 추가 (`.step4-summary`, `.s4-label`, `.s4-val`)
+- `.done-box`: 초록 계열 통일 (`#f0fdf4`)
+- 소싱 후보 카드: border-top 평면 → 카드 형태(`border + border-radius`), 썸네일 44→60px, 이름 12→13px
+- 대기열 카드: 썸네일 80→60px, `align-items: stretch` → `center`, 이름 12→13px, 배지 10→11px
+- 두 탭 카드 스타일 통일 (썸네일 크기·패딩·폰트·border 모두 동일)
+
+**`extension/ui/modules/workspace.js`**
+- `goToStep(4)` 진입 시 Step 4 요약 테이블 자동 채우기
+- 카테고리: `f-category` hidden input 대신 세부 카테고리 드롭다운 선택값 사용
+
+**`extension/ui/modules/step4.js`**
+- `renderQueue` import 추가
+- 임시저장 성공 시 `item.status = 'done'` + `renderQueue()` 호출 → 대기열 카드 "완료" 배지 즉시 반영
+
+---
+
+## 2026-05-15 — 쿠팡 소싱 오버레이 버그 수정 + UI 개선 (Claude Code)
+
+### 변경 내용
+
+**`extension/content_scripts/coupang_search.js`**
+- 월 판매량 과다 추정 버그 수정: `paging.isNext === false` 조건 추가로 마지막 페이지 초과 요청 방지
+  - 원인: 쿠팡 리뷰 API가 마지막 페이지 이후 요청에도 빈 배열이 아닌 동일 데이터 반환 → 33페이지까지 반복 집계되어 실제 리뷰수 × 33 배 과다 계산
+  - 수정: `data.rData.paging.isNext === false`이면 즉시 루프 종료
+- 리뷰 API 호출 간격 300ms → 100ms 단축 (봇 탐지 방지 범위 내)
+- 🔍 버튼 hover 시에만 표시 (opacity 0 → 1 on hover), z-index 2000으로 알리프라이스 등 타 확장 위에 표시
+- 오버레이 z-index 2001, border-radius 16px, "+ 소싱" 클릭 후 800ms 뒤 자동 닫힘
+- 버튼을 `<a>` 태그 밖 `<li>` (card) 에 직접 부착 → 클릭 시 상품 페이지 이동 방지
+- 버튼 위치: `getBoundingClientRect` 기준 `figure[class*="ProductUnit_productImage"]` 중앙 계산
+
+**`extension/ui/index.html`**
+- 로그 FAB 버튼 + 글로벌 로그 바 재설계 (항상 표시 → 플로팅 버튼으로 토글)
+
+**`extension/ui/modules/utils.js`**
+- `appendGlobalLog()`: 로그창 닫혀 있을 때 FAB 빨간 점 표시
+- `toggleLogBar()`: FAB 클릭 시 로그 패널 토글 + 알림 점 제거
+
+**`extension/ui/index.css`**
+- UI 규칙 전면 적용: Primary `#0ea5e9`, Danger `#e94560` (삭제 전용), Success `#16a34a`
+- `.btn-primary` 스카이블루 통일, `.btn-green`/`.btn-blue` 제거
+- 탭 배지, stepper done 색상, 카드 패딩 등 세부 컴포넌트 규칙 준수
+
+---
+
+## 2026-05-15 — UI 구조 개편: URL 분리 / 탭 구조 / 워크스페이스 연동 (Claude Code)
+
+### 변경 내용
+
+**`docs/UI-RULES.md`** (신규)
+- 디자인 시스템 규칙 문서 — 색상 토큰, 타이포, 버튼/카드/인풋/배지/탭 컴포넌트 규칙
+
+**`docs/ui-mockup.html`** (v2 업데이트)
+- 7개 화면 전체 플로우: 소싱 후보 탭 / 대기열 탭 / 스플릿 레이아웃 / Step 1~4
+- URL 입력 섹션 별도 컨테이너로 분리, Step 2 세로 스크롤, Step 3 실제 상세페이지 이미지
+
+**`extension/ui/index.html`**
+- URL 입력창 `.split-layout` 외부 `#url-section.url-section-bar`로 분리
+- 사이드바 탭 구조 전환: `#tab-candidates` / `#tab-queue` + `#badge-candidates` / `#badge-queue`
+- `#panel-candidates` (기본 표시) + `#panel-queue` (기본 `hidden`) + `.queue-header-bar`
+- 대기열 스크롤 컨테이너 `#queue-scroll` → `.queue-scroll-vertical#queue-scroll`
+
+**`extension/ui/index.css`**
+- `.url-section-bar` / `.url-section-inner` 신규
+- `.sidebar-tabs` / `.sidebar-tab` / `.sidebar-tab.active` / `.tab-badge` 신규
+- `.tab-panel` / `#panel-candidates` / `.queue-header-bar` / `.queue-scroll-vertical` 신규
+
+**`extension/ui/modules/candidates.js`**
+- `renderCandidates()`: `status === 'queued'` 필터링 + `#badge-candidates` 배지 갱신
+- "크롤링 시작" 클릭 시: 상태 `'queued'` 마킹 + storage 저장 + `renderCandidates()` 먼저 호출
+
+**`extension/ui/modules/queue.js`**
+- `renderQueue()`: `#badge-queue` 배지 갱신 (아이템 수)
+
+**`extension/ui/modules/workspace.js`**
+- `openDetailView()`: `#url-section` 숨김
+- `closeDetailView()`: `#url-section` 복원
+
+**`extension/ui/index.js`**
+- `switchTab(name)` 함수 추가 + `DOMContentLoaded`에 탭 클릭 이벤트 등록
+
+---
+
+## 2026-05-15 — 소싱 후보 UX 개선 + categoryId 자동 입력 + 카테고리 복원 (Claude Code)
+
+### 변경 내용
+
+**`extension/content_scripts/scraper_1688.js`**
+- 배너 버튼 텍스트: "소싱 시작 →" → "URL 연결 →" (크롤링은 익스텐션 UI에서 수동 시작)
+
+**`extension/ui/modules/candidates.js`**
+- `onCandidateLinked()`에서 `_addToQueueFromCandidate` 자동 호출 제거
+- 연결된 카드에 "크롤링 시작" 버튼 추가 (클릭 시 addToQueueFromCandidate 실행)
+- 버튼(크롤링 시작 / 직접입력 / 삭제)을 `.cand-body` 밖 `.cand-actions` div로 이동 → 우측 정렬
+
+**`extension/ui/index.css`**
+- `.cand-card`: `align-items: flex-start` → `align-items: center`, `position: relative` 제거
+- `.cand-card.cand-linked`: `opacity: 0.65` 제거 (연결된 카드가 희미하게 보이던 문제)
+- `.cand-actions` 신규: `display: flex; align-items: center; gap: 6px; flex-shrink: 0;`
+- `.cand-del-btn`: `position: absolute` 제거 (flex 내 정상 흐름)
+- `.cand-body`: `padding-right: 20px` 제거
+
+**`extension/manifest.json`**
+- CSP `connect-src`에 `https://xauth.coupang.com` 추가 (카테고리 조회 리다이렉트 허용)
+
+**`extension/ui/modules/step1-category.js`**
+- `fetchCategory`: `credentials: 'include'` 폐기 → Cookie header 수동 주입 방식 복원
+- `fetchCategory`: `Accept: 'application/json'` 헤더 추가 (HTML 응답 방지)
+- `renderDisplayCodeSelect`: `savedCode` 파라미터 추가 — 이전에 선택한 드롭다운 값 복원
+- `renderDisplayCodeSelect` change 이벤트: `tabId` 동적 조회 (`chrome.tabs.query`)로 변경
+- `saveCategoryMeta`: `categoryCodeCandidates` 배열 `queueData`에 저장
+- `restoreCategoryUI(itemId)` export 신규 추가 — 재조회 없이 드롭다운 복원
+
+**`extension/ui/modules/workspace.js`**
+- `initWorkspace`: `fetchCategory`, `restoreCategoryUI` 콜백 슬롯 추가
+- `openDetailView`: `restoreProgress` 후 카테고리 자동 복원 로직 추가
+  - `f-category-id` 비어 있고 `item.categoryId` 있으면 자동 입력
+  - `item.categoryPath` 있으면 `f-category` 경로 텍스트 표시
+  - `item.categoryCodeCandidates` 있으면 `restoreCategoryUI` 호출 (재조회 없음)
+  - 위 조건 없고 categoryId 있으면 `fetchCategory` 자동 호출
+
+**`extension/ui/index.js`**
+- `restoreCategoryUI` import 추가 (`step1-category.js`)
+- `initWorkspace` 호출에 `fetchCategory`, `restoreCategoryUI` 인수 추가
+
+**`docs/ui-mockup.html` (신규)**
+- 현재 UI / A안 / B안 나란히 비교하는 HTML 목업 파일 생성
+
+---
+
+## 2026-05-14 — 쿠팡 소싱 후보 관리 + 1688 자동 연결 (Claude Code)
+
+### 변경 내용
+
+**`extension/manifest.json`**
+- `host_permissions`: `https://www.coupang.com/*` 추가
+- `content_scripts`: `coupang_search.js` 추가 (쿠팡 검색/캠페인/카테고리 페이지)
+- CSP `connect-src`: `https://www.coupang.com` 추가
+
+**`extension/content_scripts/coupang_search.js` (신규)**
+- 쿠팡 검색 결과 카드에 오버레이 부착 (월 예상 판매량 + "+ 소싱" 버튼)
+- 월 판매량: DOM 리뷰수 × 10 초기 표시 → IntersectionObserver로 API 비동기 교체
+- MutationObserver: 페이지네이션/무한스크롤로 추가되는 카드에 자동 부착
+- "+ 소싱" 클릭 → `ADD_SOURCING_CANDIDATE` 메시지로 SW에 후보 저장
+
+**`extension/content_scripts/scraper_1688.js` (수정)**
+- 페이지 진입 시 `GET_PENDING_CANDIDATES`로 pending 후보 확인
+- 후보 있으면 상단 고정 배너 표시 ("이 상품을 [후보명]으로 소싱하기")
+- 후보 여러 개: `<select>` 드롭다운으로 선택
+- 배너 클릭 → `LINK_1688_TO_CANDIDATE` 메시지 → 연결 완료
+
+**`extension/background/service-worker.js` (수정)**
+- `ADD_SOURCING_CANDIDATE`: candidates 배열에 추가, storage 저장, UI 브로드캐스트
+- `GET_PENDING_CANDIDATES`: status='pending' 후보 전체 반환
+- `LINK_1688_TO_CANDIDATE`: url1688 저장, status→'linked', UI 브로드캐스트
+- `REMOVE_SOURCING_CANDIDATE`: 해당 candidateId 삭제, UI 브로드캐스트
+
+**`extension/ui/modules/state.js` (수정)**
+- `sourcingCandidates: []` 추가
+
+**`extension/ui/modules/candidates.js` (신규)**
+- 좌측 패널 상단 소싱 후보 카드 렌더링 (접이식 섹션)
+- 카드: 쿠팡 썸네일 / 상품명 / 가격 / status / 삭제 버튼
+- "직접 입력" 버튼: 1688 URL 수동 입력 인풋 노출
+- linked 상태 → `addToQueueFromCandidate()` 자동 실행
+
+**`extension/ui/modules/queue.js` (수정)**
+- `addToQueueFromCandidate(candidate)` 추가: 후보 연결 시 자동 큐 진입 + 크롤링 시작
+
+**`extension/ui/modules/messages.js` (수정)**
+- `CANDIDATE_ADDED`, `CANDIDATE_LINKED`, `CANDIDATE_REMOVED` 케이스 추가
+
+**`extension/ui/index.html` (수정)**
+- 좌측 사이드바 상단에 "쿠팡 소싱 후보" 접이식 섹션 추가
+
+**`extension/ui/index.css` (수정)**
+- 소싱 후보 패널 스타일 추가 (`.candidates-section`, `.cand-*`)
+
+**`extension/ui/index.js` (수정)**
+- `candidates.js` import + `initCandidates()`, `onCandidateAdded/Linked/Removed` 콜백 연결
+
+---
+
 ## 2026-05-14 — Step 4 색상 속성명 동적화 + Step 2/3 크롭 이미지 개선 (Claude Code)
 
 ### 변경 내용

@@ -19,8 +19,9 @@ export async function fetchCategory() {
 
     const resp = await fetch(
       `https://supplier.coupang.com/qvt/kan-categories/search?keyword=${categoryId}&searchType=kanCategoryIds`,
-      { headers: { Cookie: cookieStr } }
+      { headers: { Cookie: cookieStr, Accept: 'application/json' } }
     );
+    if (!resp.ok) throw new Error('서버 응답 오류: ' + resp.status);
     const data = await resp.json();
     let items = Array.isArray(data) ? data : [];
     if (!items.length && data?.data) items = Array.isArray(data.data) ? data.data : [data.data];
@@ -76,7 +77,7 @@ async function fetchNoticeSchema(displayCode, tabId) {
   }
 }
 
-function renderDisplayCodeSelect(candidates, itemId, resultEl, tabId) {
+function renderDisplayCodeSelect(candidates, itemId, resultEl, tabId, savedCode = null) {
   const existing = document.getElementById('display-code-select-wrap');
   if (existing) existing.remove();
   const wrap = document.createElement('div');
@@ -94,27 +95,58 @@ function renderDisplayCodeSelect(candidates, itemId, resultEl, tabId) {
     opt.textContent = c.path;
     sel.appendChild(opt);
   });
-  if (state.queueData[itemId]) state.queueData[itemId].displayCategoryCode = candidates[0].code;
-  fetchNoticeSchema(candidates[0].code, tabId).then(({ noticeNumber, noticeItems }) => {
-    if (state.queueData[itemId]) {
-      if (noticeNumber !== null) state.queueData[itemId].productNoticeNumber = noticeNumber;
-      if (noticeItems.length > 0) state.queueData[itemId].productNoticeItems = noticeItems;
-    }
-  });
+
+  // 이전 선택값 복원 또는 첫 번째 항목 기본 선택
+  const savedIdx = savedCode != null ? candidates.findIndex(c => c.code === savedCode) : -1;
+  const defaultIdx = savedIdx >= 0 ? savedIdx : 0;
+  sel.value = defaultIdx;
+
+  if (tabId && !savedCode) {
+    if (state.queueData[itemId]) state.queueData[itemId].displayCategoryCode = candidates[defaultIdx].code;
+    fetchNoticeSchema(candidates[defaultIdx].code, tabId).then(({ noticeNumber, noticeItems }) => {
+      if (state.queueData[itemId]) {
+        if (noticeNumber !== null) state.queueData[itemId].productNoticeNumber = noticeNumber;
+        if (noticeItems.length > 0) state.queueData[itemId].productNoticeItems = noticeItems;
+      }
+    });
+  }
+
   sel.addEventListener('change', () => {
     const c = candidates[parseInt(sel.value)];
-    if (c && state.queueData[itemId]) {
-      state.queueData[itemId].displayCategoryCode = c.code;
-      fetchNoticeSchema(c.code, tabId).then(({ noticeNumber, noticeItems }) => {
+    if (!c || !state.queueData[itemId]) return;
+    state.queueData[itemId].displayCategoryCode = c.code;
+    chrome.tabs.query({ url: 'https://supplier.coupang.com/*' }, (tabs) => {
+      if (!tabs.length) return;
+      fetchNoticeSchema(c.code, tabs[0].id).then(({ noticeNumber, noticeItems }) => {
         if (state.queueData[itemId]) {
           if (noticeNumber !== null) state.queueData[itemId].productNoticeNumber = noticeNumber;
           if (noticeItems.length > 0) state.queueData[itemId].productNoticeItems = noticeItems;
         }
       });
-    }
+    });
   });
   wrap.appendChild(sel);
   resultEl.appendChild(wrap);
+}
+
+export function restoreCategoryUI(itemId) {
+  const item = state.queueData[itemId];
+  if (!item?.categoryCodeCandidates?.length) return;
+
+  const resultEl = $('category-result');
+  if (!resultEl) return;
+  resultEl.innerHTML = '';
+  resultEl.classList.remove('hidden');
+
+  const candidates = item.categoryCodeCandidates;
+  if (candidates.length === 1) {
+    const info = document.createElement('div');
+    info.style.cssText = 'font-size:12px;color:#555;padding:4px 2px;';
+    info.textContent = candidates[0].path;
+    resultEl.appendChild(info);
+  } else {
+    renderDisplayCodeSelect(candidates, itemId, resultEl, null, item.displayCategoryCode ?? null);
+  }
 }
 
 async function saveCategoryMeta(item, resultEl) {
@@ -182,19 +214,23 @@ async function saveCategoryMeta(item, resultEl) {
 
     if (candidates.length === 0) {
       console.warn('[download-quotation] displayCategoryCode 후보 없음');
-    } else if (candidates.length === 1) {
-      if (state.queueData[snapItemId]) state.queueData[snapItemId].displayCategoryCode = candidates[0].code;
-      const { noticeNumber: noticeNum, noticeItems } = await fetchNoticeSchema(candidates[0].code, tabId);
-      if (state.queueData[snapItemId]) {
-        if (noticeNum !== null) state.queueData[snapItemId].productNoticeNumber = noticeNum;
-        if (noticeItems.length > 0) state.queueData[snapItemId].productNoticeItems = noticeItems;
-      }
-      const info = document.createElement('div');
-      info.style.cssText = 'font-size:12px;color:#555;padding:4px 2px;';
-      info.textContent = candidates[0].path;
-      resultEl.appendChild(info);
     } else {
-      renderDisplayCodeSelect(candidates, snapItemId, resultEl, tabId);
+      if (state.queueData[snapItemId]) state.queueData[snapItemId].categoryCodeCandidates = candidates;
+
+      if (candidates.length === 1) {
+        if (state.queueData[snapItemId]) state.queueData[snapItemId].displayCategoryCode = candidates[0].code;
+        const { noticeNumber: noticeNum, noticeItems } = await fetchNoticeSchema(candidates[0].code, tabId);
+        if (state.queueData[snapItemId]) {
+          if (noticeNum !== null) state.queueData[snapItemId].productNoticeNumber = noticeNum;
+          if (noticeItems.length > 0) state.queueData[snapItemId].productNoticeItems = noticeItems;
+        }
+        const info = document.createElement('div');
+        info.style.cssText = 'font-size:12px;color:#555;padding:4px 2px;';
+        info.textContent = candidates[0].path;
+        resultEl.appendChild(info);
+      } else {
+        renderDisplayCodeSelect(candidates, snapItemId, resultEl, tabId);
+      }
     }
   } catch (e) {
     console.warn('[saveCategoryMeta 오류]', e.message);

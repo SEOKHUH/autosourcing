@@ -1,12 +1,60 @@
 // Step 2: 이미지 그리드 렌더링 + 배지 갱신
 
 import { state } from './state.js';
-import { $ } from './utils.js';
+import { $, dataUrlToArrayBuffer } from './utils.js';
 import { IDB } from './idb.js';
+import { openTextEraserModal } from './step2-text-eraser.js';
+import { openThumbnailCropperModal } from './thumbnail-cropper.js';
 
 let _showOptionPicker = null;
 export function initImageGrid({ showOptionPicker }) {
   _showOptionPicker = showOptionPicker;
+}
+
+function dataUrlFromBuffer(buffer, mimeType) {
+  return new Promise((resolve) => {
+    const blob = new Blob([buffer], { type: mimeType || 'image/jpeg' });
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
+function attachEditButtons(item, img, key) {
+  const overlay = document.createElement('div');
+  overlay.className = 'img-edit-overlay';
+
+  const cropBtn = document.createElement('button');
+  cropBtn.className   = 'img-edit-btn img-edit-crop';
+  cropBtn.textContent = '크롭';
+  cropBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const rec = await IDB.get(key);
+    if (!rec) return;
+    const dataUrl = await dataUrlFromBuffer(rec.buffer, rec.mimeType);
+    openThumbnailCropperModal(dataUrl, async (newDataUrl) => {
+      await IDB.put(key, dataUrlToArrayBuffer(newDataUrl), rec.url, 'image/jpeg');
+      img.src = newDataUrl;
+    });
+  });
+
+  const eraseBtn = document.createElement('button');
+  eraseBtn.className   = 'img-edit-btn img-edit-erase';
+  eraseBtn.textContent = '텍스트 제거';
+  eraseBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const rec = await IDB.get(key);
+    if (!rec) return;
+    const dataUrl = await dataUrlFromBuffer(rec.buffer, rec.mimeType);
+    openTextEraserModal(dataUrl, async (newDataUrl) => {
+      await IDB.put(key, dataUrlToArrayBuffer(newDataUrl), rec.url, 'image/jpeg');
+      img.src = newDataUrl;
+    });
+  });
+
+  overlay.appendChild(cropBtn);
+  overlay.appendChild(eraseBtn);
+  item.appendChild(overlay);
 }
 
 export async function renderImageGrid() {
@@ -33,6 +81,7 @@ export async function renderImageGrid() {
     refreshImageGridItem(item, img, key);
     img.addEventListener('click', (e) => { if (_showOptionPicker) _showOptionPicker(key, img, item, e); });
     item.appendChild(img);
+    attachEditButtons(item, img, key);
     grid.appendChild(item);
   }
 
@@ -53,6 +102,7 @@ export async function renderImageGrid() {
     refreshImageGridItem(item, img, key);
     img.addEventListener('click', (e) => { if (_showOptionPicker) _showOptionPicker(key, img, item, e); });
     item.appendChild(img);
+    attachEditButtons(item, img, key);
     grid.appendChild(item);
   }
 }

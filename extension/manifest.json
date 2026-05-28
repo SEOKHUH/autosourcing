@@ -18,6 +18,7 @@
     "https://*.alibaba.com/*",
     "https://*.tmall.com/*",
     "https://supplier.coupang.com/*",
+    "https://www.coupang.com/*",
     "https://translate.googleapis.com/*",
     "https://generativelanguage.googleapis.com/*"
   ],
@@ -34,17 +35,22 @@
       "matches": ["https://supplier.coupang.com/*"],
       "js": ["content_scripts/supplier_hub.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.coupang.com/*"],
+      "js": ["content_scripts/coupang_search.js"],
+      "run_at": "document_idle"
     }
   ],
   "action": {
     "default_title": "헤오르 AutoSourcing"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'self'; img-src 'self' blob: data:; connect-src 'self' https://translate.googleapis.com https://generativelanguage.googleapis.com https://supplier.coupang.com https://*.1688.com https://*.alicdn.com https://*.alibaba.com https://*.tmall.com https://fonts.googleapis.com https://fonts.gstatic.com blob:"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'self'; img-src 'self' blob: data: https://*.coupangcdn.com https://image.coupangcdn.com; connect-src 'self' https://translate.googleapis.com https://generativelanguage.googleapis.com https://supplier.coupang.com https://xauth.coupang.com https://www.coupang.com https://*.1688.com https://*.alicdn.com https://*.alibaba.com https://*.tmall.com https://fonts.googleapis.com https://fonts.gstatic.com blob:"
   },
   "web_accessible_resources": [
     {
-      "resources": ["static/*", "vendor/*"],
+      "resources": ["static/*", "vendor/*", "vendor/tessdata/*"],
       "matches": ["<all_urls>"]
     }
   ]

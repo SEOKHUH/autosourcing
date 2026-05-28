@@ -4,7 +4,7 @@ import { initMessageHandler }               from './modules/messages.js';
 import { initQueue, addToQueue, loadQueue, retryItem, clearDoneItems, clearAllItems, updateQueueItemStatus } from './modules/queue.js';
 import { initScrape, onScrapeDone }          from './modules/scrape.js';
 import { initWorkspace, openDetailView, closeDetailView, goToStep } from './modules/workspace.js';
-import { fetchCategory }                     from './modules/step1-category.js';
+import { fetchCategory, restoreCategoryUI }  from './modules/step1-category.js';
 import { onSkuChange }                       from './modules/step1-form.js';
 import { fillStep1 }                         from './modules/step1-form.js';
 import { initImageGrid, renderImageGrid, refreshImageGridItem } from './modules/step2-imagegrid.js';
@@ -13,15 +13,29 @@ import { renderDetailImgList, renderCroppedItem } from './modules/step2-cropper.
 import { genAllMedia }                        from './modules/step3.js';
 import { startRegister }                      from './modules/step4.js';
 import { state }                              from './modules/state.js';
+import { initCandidates, onCandidateAdded, onCandidateLinked, onCandidateRemoved } from './modules/candidates.js';
+import { addToQueueFromCandidate }            from './modules/queue.js';
 
 // 순환 의존 콜백 주입
-initMessageHandler({ onScrapeDone, updateQueueItemStatus });
+initMessageHandler({ onScrapeDone, updateQueueItemStatus, onCandidateAdded, onCandidateLinked, onCandidateRemoved });
 initQueue({ openDetailView, closeDetailView });
+initCandidates({ addToQueueFromCandidate });
 initScrape({ openDetailView });
-initWorkspace({ renderOptionCards, renderImageGrid, renderDetailImgList, fillStep1, genAllMedia, refreshImageGridItem, renderCroppedItem });
+initWorkspace({ renderOptionCards, renderImageGrid, renderDetailImgList, fillStep1, genAllMedia, refreshImageGridItem, renderCroppedItem, fetchCategory, restoreCategoryUI });
 initImageGrid({ showOptionPicker });
 
+function switchTab(name) {
+  ['candidates', 'queue'].forEach(t => {
+    $('tab-' + t).classList.toggle('active', t === name);
+    $('panel-' + t).classList.toggle('hidden', t !== name);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // 탭 전환
+  $('tab-candidates').addEventListener('click', () => switchTab('candidates'));
+  $('tab-queue').addEventListener('click', () => switchTab('queue'));
+
   // URL 입력
   $('queue-url').addEventListener('keydown', e => { if (e.key === 'Enter') addToQueue(); });
   $('btn-add').addEventListener('click', addToQueue);
@@ -53,7 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-clear-all').addEventListener('click', clearAllItems);
 
   // 글로벌 로그 바
-  $('log-bar-header').addEventListener('click', toggleLogBar);
+  $('log-fab').addEventListener('click', toggleLogBar);
+  $('btn-log-close').addEventListener('click', toggleLogBar);
 
   loadQueue();
 });

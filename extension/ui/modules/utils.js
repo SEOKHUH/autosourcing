@@ -54,12 +54,28 @@ export function appendGlobalLog(text) {
   content.textContent += (content.textContent ? '\n' : '') + text;
   content.scrollTop = content.scrollHeight;
   last.textContent  = text;
+  // 로그창 닫혀 있으면 FAB에 알림 점 표시
+  if ($('global-log-bar').classList.contains('hidden')) {
+    $('log-fab-dot')?.classList.remove('hidden');
+  }
+}
+
+export function clientToCanvas(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top)  * scaleY,
+  };
 }
 
 export function toggleLogBar() {
-  const content  = $('log-bar-content');
-  const btn      = $('btn-log-toggle');
-  const expanded = !content.classList.contains('hidden');
-  content.classList.toggle('hidden', expanded);
-  btn.textContent = expanded ? '▲' : '▼';
+  const bar = $('global-log-bar');
+  const isHidden = bar.classList.contains('hidden');
+  bar.classList.toggle('hidden', !isHidden);
+  if (isHidden) {
+    // 열릴 때: 알림 점 제거
+    $('log-fab-dot')?.classList.add('hidden');
+  }
 }

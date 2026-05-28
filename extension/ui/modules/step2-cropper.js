@@ -4,6 +4,7 @@ import { state } from './state.js';
 import { $, dataUrlToArrayBuffer } from './utils.js';
 import { IDB } from './idb.js';
 import { saveProgress } from './workspace.js';
+import { openTextEraserModal } from './step2-text-eraser.js';
 
 export async function renderDetailImgList() {
   const list = $('detail-img-list');
@@ -148,7 +149,26 @@ export function renderCroppedItem(dataUrl, key) {
     }
     $('cropped-list').removeChild(item);
   });
+
+  const eraseBtn = document.createElement('button');
+  eraseBtn.className   = 'crop-erase-btn';
+  eraseBtn.textContent = '텍스트 제거';
+  eraseBtn.addEventListener('click', () => {
+    const idx = state.croppedImageKeys.indexOf(key);
+    if (idx < 0) return;
+    const currentDataUrl = state.croppedImages[idx];
+    openTextEraserModal(currentDataUrl, async (newDataUrl) => {
+      const i = state.croppedImageKeys.indexOf(key);
+      if (i < 0) return;
+      state.croppedImages[i] = newDataUrl;
+      await IDB.put(key, dataUrlToArrayBuffer(newDataUrl), 'crop', 'image/jpeg');
+      img.src = newDataUrl;
+      saveProgress();
+    });
+  });
+
   item.appendChild(img);
+  item.appendChild(eraseBtn);
   item.appendChild(del);
   $('cropped-list').appendChild(item);
 }

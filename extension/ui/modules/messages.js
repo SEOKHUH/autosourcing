@@ -6,10 +6,16 @@ import { state } from './state.js';
 
 let _onScrapeDone = null;
 let _updateStatus = null;
+let _onCandidateAdded = null;
+let _onCandidateLinked = null;
+let _onCandidateRemoved = null;
 
-export function initMessageHandler({ onScrapeDone, updateQueueItemStatus }) {
+export function initMessageHandler({ onScrapeDone, updateQueueItemStatus, onCandidateAdded, onCandidateLinked, onCandidateRemoved }) {
   _onScrapeDone = onScrapeDone;
   _updateStatus = updateQueueItemStatus;
+  _onCandidateAdded = onCandidateAdded;
+  _onCandidateLinked = onCandidateLinked;
+  _onCandidateRemoved = onCandidateRemoved;
   chrome.runtime.onMessage.addListener(handleSwMessage);
 }
 
@@ -35,6 +41,15 @@ function handleSwMessage(msg) {
       break;
     case 'REGISTER_ERROR':
       appendGlobalLog('❌ 등록 오류: ' + msg.error);
+      break;
+    case 'CANDIDATE_ADDED':
+      if (_onCandidateAdded) _onCandidateAdded(msg.candidate);
+      break;
+    case 'CANDIDATE_LINKED':
+      if (_onCandidateLinked) _onCandidateLinked(msg.candidate);
+      break;
+    case 'CANDIDATE_REMOVED':
+      if (_onCandidateRemoved) _onCandidateRemoved(msg.candidateId);
       break;
   }
 }
