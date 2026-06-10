@@ -2,3 +2,4 @@
 extension.zip
 itempage/
 .claude/settings.local.json
+.env
