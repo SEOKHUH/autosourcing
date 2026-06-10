@@ -1,3 +1,4 @@
 .DS_Store
 extension.zip
 itempage/
+.claude/settings.local.json
