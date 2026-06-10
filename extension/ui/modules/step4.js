@@ -5,6 +5,8 @@ import { state } from './state.js';
 import { $, appendGlobalLog } from './utils.js';
 import { IDB } from './idb.js';
 import { saveQueue, renderQueue } from './queue.js';
+import { buildLedgerRows } from './ledger.js';
+import { pushLedgerToSheet } from './mobile-sync.js';
 
 export async function startRegister() {
   if (!state.currentScrapeResult) { alert('상품 정보가 없습니다'); return; }
@@ -182,7 +184,7 @@ export async function startRegister() {
               { certificateName: 'KCS 인증번호', certificateValue: '해당사항없음' },
               { certificateName: '안전기준적합확인 신고번호', certificateValue: '해당사항없음' },
             ],
-            adCert: adCertValue,
+            adCert: '',
             notices,
           };
           const makeSkuEntry = (sku, mainFn, labelFn, detailFn) => ({
@@ -204,7 +206,7 @@ export async function startRegister() {
               businessType: '기타 도소매업자',
               taxationSchema: '과세',
               importType: '수입상품',
-              searchTags: '',
+              searchTags: p.searchTags || '',
               unexposedAttributes: [],
             },
             imagePage: {
@@ -220,7 +222,7 @@ export async function startRegister() {
             },
             legalPage,
             logisticsPage: {
-              totalSKUsInBox: 30, daysToExpiration: 365,
+              totalSKUsInBox: 30, daysToExpiration: 0,
               specialHandlingReason: '해당사항없음', skuUnitBoxWeight: '500', skuUnitBoxDimension: '150*300*400',
               fashionYear: String(new Date().getFullYear()), fashionSeason: '사계절',
             },
@@ -303,8 +305,9 @@ export async function startRegister() {
           labelImage: recToB64(labelRec),
           detailImage: recToB64(detailRec),
           attributes: state.currentScrapeResult?.attrs_translated || [],
-          spec:   document.getElementById('f-spec')?.value   || '',
-          weight: document.getElementById('f-weight')?.value || '',
+          spec:        $('f-spec').value   || '',
+          weight:      $('f-weight').value || '',
+          searchTags:  $('f-tags').value   || '',
         }],
       }, (res) => {
         if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
@@ -316,9 +319,24 @@ export async function startRegister() {
     if (results?.ok) {
       item.draftDocId = results.docId;
       item.status = 'done';
+
       saveQueue();
       renderQueue();
       $('register-done').classList.remove('hidden');
+
+      // 소싱 원장 시트 기록 — 백그라운드 (완료 화면 블로킹 방지)
+      const _item = item;
+      (async () => {
+        try {
+          const ledgerRows = buildLedgerRows(_item);
+          const sheetRes = await pushLedgerToSheet({ url1688: _item.url, rows: ledgerRows });
+          _item.submittedToSheet = sheetRes.ok || sheetRes.noWebhook;
+        } catch (e) {
+          _item.submittedToSheet = false;
+          appendGlobalLog('⚠️ 소싱 원장 기록 오류: ' + e.message);
+        }
+        saveQueue();
+      })();
     } else {
       appendGlobalLog('❌ 임시저장 실패: ' + (results?.error || '알 수 없는 오류'));
     }

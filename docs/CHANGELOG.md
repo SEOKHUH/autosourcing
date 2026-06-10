@@ -2,6 +2,384 @@
 
 ---
 
+## 2026-06-10 — 모듈 문서 전체 업데이트 + CLAUDE.md 정오 (Claude Code)
+
+### 변경 내용
+
+**모듈 문서 신규 생성 (11개)**
+- `docs/modules/candidates.md` — 소싱 후보 카드 렌더링, 상태(pending/linked/queued), 버튼 동작
+- `docs/modules/mobile-sync.md` — 구글 시트 → 쿠팡 데이터 추출 → 후보 등록, pushLedgerToSheet
+- `docs/modules/ledger.md` — buildLedgerRows 로직, 구글 시트 컬럼 구조, 색상 차원 판별
+- `docs/modules/messages.md` — SW→UI 메시지 타입 전체 목록, 콜백 주입 구조
+- `docs/modules/idb.md` — IDB 키 규칙(main_/detail_/skuthumb_/crop_/label_), 주요 함수
+- `docs/modules/coupang_search.md` — 돋보기 버튼 오버레이, Akamai 봇 차단 우회(referrer 헤더)
+- `docs/modules/translator.md` — Google Translate 비공개 API, FILLER_WORDS, cleanProductName
+- `docs/modules/html_renderer.md` — iframe 렌더링, html2canvas 캡처, 라벨 고정/자동 입력 필드
+- `docs/modules/price_calculator.md` — 계산 공식 표, calculatePrices/calculateFromSkus
+- `docs/modules/utils.md` — 전체 함수 목록, 상태 코드 매핑 표
+- `docs/modules/google_apps_script.md` — 웹앱 엔드포인트, 시트 구조, 마이그레이션 로직
+
+**모듈 문서 업데이트 (4개)**
+- `docs/modules/queue.md` — 크롤 스로틀(1800ms), enqueueRescrape, addToQueueFromCandidate, priceMissing 배지 추가
+- `docs/modules/scrape.md` — Gemini 우선/Google Translate 폴백 번역 전략, 가격 0 자동 감지 추가
+- `docs/modules/workspace.md` — 쿠팡 참고 카드, yuan 저장/복원(saveProgress/restoreProgress) 추가
+- `docs/modules/state.md` — sourcingCandidates, skuThumbKeys 속성 추가, 표 형식으로 개선
+
+**`docs/MODULES.md` 업데이트**
+- 신규 docs 링크 전부 추가
+- Content Scripts & 외부 연동 섹션 신설 (coupang_search.js, Code.gs)
+- 인프라 섹션 utils/messages/idb 등 상세 doc 링크 추가
+
+**`CLAUDE.md` 전면 정오**
+- 번역 방식: Gemini API 우선 + Google Translate 폴백으로 정정 (모델명 `gemini-3.1-flash-lite`, 키 저장 위치 명시)
+- 파일 구조: 신규 모듈 6개 추가 (`candidates.js`, `mobile-sync.js`, `ledger.js`, `image-editor.js`, `ocr-worker.js`, `inpaint.js`), `coupang_search.js` 추가, `google-apps-script/` 디렉토리 추가
+- SKU 옵션 구조 섹션: 제목·내용 모두 service-worker.js + window.context 방식으로 재작성 (구버전 DOM 셀렉터 설명 삭제), `sku_groups_translated`·`isColorDim` 추가
+- 크롤링 핵심 사항 섹션: 섹션 전체 service-worker.js 기반으로 재작성 (`tryBackgroundFetch` 흐름 설명)
+- UI 구조: 좌측 패널 탭 구조(소싱 후보/대기열) 반영, 쿠팡 참고 카드·Step 4 원장 전송 추가
+- 사용 흐름: A(직접입력) / B(쿠팡 오버레이) / C(모바일 동기화) 세 경로로 분리
+- 소싱 원장 섹션 신규 추가
+- 알려진 제한사항: 구버전 DOM 셀렉터 항목 삭제, 실제 제한사항으로 교체
+
+---
+
+## 2026-06-09 — coupang_search.js 카테고리 ID 403 수정 (Claude Code)
+
+### 변경 내용
+
+**`coupang_search.js` `fetchCategoryId` 수정**
+- 기존: referrer 없이 bare fetch → Akamai 봇 차단으로 403 Forbidden
+- 수정: `referrer: https://www.coupang.com/vp/products/{productId}`, `credentials: 'include'`, `accept` 헤더 추가
+- 쿠팡 상품 상세 페이지가 동일 API 호출 시 referrer를 상품 URL로 세팅하는 것을 Network 탭에서 확인 후 적용
+- 결과: 모든 상품에서 카테고리 ID 정상 수집
+
+---
+
+## 2026-06-07 — 쿠팡 원본 카드 개선 + 원장 시트 수식 자동화 (Claude Code)
+
+### 변경 내용
+
+**쿠팡 원본 참고 카드 개선**
+- 카드 UI 한 줄 컴팩트형으로 개편 (썸네일·상품명·가격·월판매량·링크 단일 flex 행)
+- `queue.js` `addToQueueFromCandidate`: `coupangName`(쿠팡 상품명 별도 저장), `coupangPrice`, `estimatedMonthlySales` 큐 항목에 복사
+- `workspace.js`: 카드에 쿠팡 판매가 + 월 N개 판매 표시, `coupangName` 우선 사용
+- 옵션 추출 기능 제거 (DOM 셀렉터 불안정 → `coupangOptions` 관련 코드 전면 제거)
+
+**소싱 원장 시트 개선 (`Code.gs`, `ledger.js`)**
+- 시트 I열에 `월판매량` 추가, END ROAS J열로 이동
+- 기존 시트 자동 마이그레이션: `handleLedger` 실행 시 `월판매량` 열 없으면 END ROAS 앞에 자동 삽입
+- 공급가·판매가·END ROAS 수식 자동 기입 (값 대신 수식으로 변경):
+  - 공급가(G): `=CEILING(F*400+3000, 100)`
+  - 판매가(H): `=CEILING(G/0.6, 100)`
+  - END ROAS(J): `=IFERROR((H/(G-F*400))*1.1, "-")` — 공급마진액 기준
+- `ledger.js` `buildLedgerRows`: `monthlySales` 필드 추가
+
+---
+
+## 2026-06-07 — 소싱 워크플로우 수정 5종 + 쿠팡 원본 참고 카드 (Claude Code)
+
+### 변경 내용
+
+**① 소싱 갯수 누수 수정**
+- `step1-form.js` `fillStep1` 첫 줄에 `$('f-qty').value = '1개'` 추가 → 이전 상품의 수량 값이 다음 상품에 남던 문제 해결
+
+**② 가격 0 자동 감지 + 1회 재크롤 + 배지**
+- `scrape.js` `onScrapeDone`: SKU/price_min 모두 0이면 자동 1회 재크롤(`enqueueRescrape`) → 재시도 후에도 0이면 `priceMissing: true` 플래그
+- `queue.js` `renderQueue`: `priceMissing` 항목에 "⚠ 가격 확인" 주황 배지 표시, 재크롤 버튼 조건에도 포함
+- `queue.js` `retryItem`: 수동 재크롤 시 `priceMissing` / `_priceRetried` 플래그 초기화
+- `index.css`: `.badge-price-warn` 스타일 추가 (주황계열)
+
+**③ 크롤 간 1.8초 throttle**
+- `queue.js` `crawlSettled`: `pumpCrawl()` → `setTimeout(pumpCrawl, 1800)` — 연속 크롤 시 1.8초 텀으로 1688 레이트리밋 완화
+
+**④ 카테고리 조회 자동 재시도**
+- `step1-category.js` `fetchCategory`: fetch 최대 3회 재시도 (1초·2초 텀) — 일시적 네트워크/레이트리밋 오류 자동 흡수
+
+**⑤ 쿠팡 원본 참고 카드**
+- `mobile-sync.js` `extractCoupangData`: 쿠팡 옵션명 DOM 추출(`coupangOptions`) 추가 (브리틀할 수 있음, 실패 시 빈 배열)
+- `mobile-sync.js` `syncFromSheet`: candidate에 `coupangOptions` 필드 추가
+- `queue.js` `addToQueueFromCandidate`: `coupangUrl`, `coupangOptions`, `coupangThumb` 큐 항목에 복사 (done 후 후보 삭제돼도 워크스페이스에서 유지)
+- `index.html`: Step 1 상단에 `#coupang-ref-card` DOM 추가 (썸네일·상품명·옵션 칩·"쿠팡에서 보기" 링크)
+- `workspace.js` `openDetailView`: `item.coupangUrl` 있으면 카드 채움, 없으면 `hidden`
+- `index.css`: `.coupang-ref-card` 등 스타일 추가 (하늘색 배경 카드)
+
+---
+
+## 2026-06-07 — 소싱 원장 후속 수정 + 문서 정정 (Claude Code)
+
+### 변경 내용
+
+**f-yuan 값 미저장 버그 수정**
+- `workspace.js` `saveProgress()`: `yuan: $('f-yuan').value` 추가 → 스텝 이동 시 위안가 유지
+- `workspace.js` `restoreProgress()`: `if (p.yuan !== undefined) $('f-yuan').value = p.yuan` 추가
+- `ledger.js` `buildLedgerRows()`: `parseFloat(progress.yuan)` 우선 사용 → 원장 시트 가격 0 문제 해결
+
+**Step 4 속도 저하 수정**
+- `step4.js`: `pushLedgerToSheet` await 제거 → fire-and-forget 비동기 처리
+- 임시저장 완료 메시지가 시트 전송을 기다리지 않고 즉시 표시됨
+
+**소싱 원장 Apps Script 수정 (Code.gs)**
+- `handleLedger()`: `insertRowsAfter` 후 data validation 재적용 → 새 삽입 행에도 현황 드롭다운 표시
+- A열 초기값: `''` → `'제안중'` 자동 입력
+
+**scraper_1688.js 죽은 코드 되돌림**
+- 이전 세션에 추가했던 SKU 가격 폴백 블록(`if (!R.price_min)`) 제거
+- 해당 파일 자체가 스크래핑에 미사용(소싱 후보 배너 UI 전용)이므로 효과 없는 코드였음
+
+**CLAUDE.md 스크래핑 방식 설명 정정**
+- 크롤링 라인 수정: "순수 DOM 스크래핑" → "window.context JSON fetch+파싱 (service-worker.js)"
+- `service-worker.js` 설명: "스크래핑 본체: window.context JSON fetch+파싱, 탭 관리, 이미지 다운로드, 메시지 라우팅"
+- `scraper_1688.js` 설명: "1688 페이지 '소싱 후보 배너' UI 담당 (DOM 스크래핑 로직은 죽은 코드)"
+
+---
+
+## 2026-06-05 — 소싱 원장 시트 자동 기록 구현 (Claude Code)
+
+### 변경 내용
+
+**소싱 원장 (`ledger` 시트) 자동 기록**
+- Step 4 임시저장 완료(`done`) 시 옵션(색상)별 1행씩 구글 시트에 자동 기록
+- 시트 스키마(9열): `현황 / 1688링크 / 상품명 / 색상 / 수량 / 중국원가 / 공급가 / 판매가 / END ROAS`
+- 최신 상품이 맨 위(헤더 바로 아래)에 삽입, 사장님 2행 END ROAS 수식 자동 복사
+- 현황 드롭다운(제안중/통과/반려/수입완료) + 조건부 서식(통과=초록, 반려=빨강, 수입완료=회색) 자동 적용
+- 같은 상품 중복 삽입 방지 (url1688 기준)
+
+**신규 파일**
+- `extension/ui/modules/ledger.js`: `buildLedgerRows(item)` — step4.js/queue.js 순환 의존 방지용 분리 모듈
+
+**변경 파일**
+- `docs/google-apps-script/Code.gs`: `handleLedger`, `ensureLedgerSheet`, `onOpen` 메뉴, `moveCompletedRows` 추가
+- `extension/ui/modules/mobile-sync.js`: `pushLedgerToSheet` 추가 (웹훅 재사용, 3회 재시도)
+- `extension/ui/modules/step4.js`: done 직후 `buildLedgerRows` + `pushLedgerToSheet` 호출, `item.submittedToSheet` 저장
+- `extension/ui/modules/queue.js`: `deleteItem` / `clearDoneItems` / `clearAllItems`에 안전망 추가 — 미전송 항목 재전송 실패 시 삭제 차단
+- `docs/google-apps-script/DEPLOY_GUIDE.md`: 소싱 원장 초기 설정 가이드(섹션 6) 추가
+
+**수동 작업 필요**
+- Apps Script 편집기에서 새 버전으로 재배포(웹훅 URL 유지)
+- 첫 임시저장 후 시트 2행 I열(END ROAS)에 수식 1회 입력
+
+---
+
+## 2026-06-04 — UI 폴리싱 + 가격 개선 (Claude Code)
+
+### 변경 내용
+
+**상세페이지 텍스트 띄어쓰기 수정**
+- `detail_page/style.css`, `label/style.css`: `letter-spacing: 0` → 제거 + `word-spacing: 0.01px` 추가
+- `html_renderer.js`: 상세페이지 `foreignObjectRendering: false` → `true` — html2canvas 텍스트 공백 버그 근본 해결
+
+**이미지 편집 크롭 미적용 버그 수정**
+- `image-editor.js` `applyAndClose()`: 크롭 탭에서 텍스트 제거 탭으로 넘어가지 않고 바로 적용해도 `cropBox` → `activeCrop` 변환하여 크롭 반영
+
+**재크롤링 버튼 UI 개선**
+- `queue.js`: 버튼 위치를 `q-card-body` 밖 `.q-card-meta` 컬럼으로 이동 (배지 위, 버튼 아래 우측 정렬)
+- `index.css`: 색상 빨강 → 스카이블루, 배지·버튼 너비 통일 (`width: 72px`)
+- 표시 조건: `review` / `error` 상태에서만 표시, `scraping` 중엔 숨김
+
+**가격 수집 폴백 개선**
+- `scraper_1688.js`: ¥ 기호만 단독으로 있는 span 발견 시 부모 요소 textContent 파싱 추가 (`<span>¥</span><span>0.1</span>` 구조 대응)
+
+**위안가 직접 수정 기능**
+- `index.html`: `d-yuan` div → `f-yuan` number input으로 교체 (✎ 아이콘 포함)
+- `step1-form.js`: `updatePriceDisplay` 업데이트 + `initYuanInput()` 추가 — 위안가 수정 시 원가·공급가·판매가 자동 재계산
+- `index.js`: `initYuanInput()` DOMContentLoaded 시 호출
+
+**서플라이어 허브 고정값**
+- `step4.js`: `daysToExpiration` 365 → 0
+
+---
+
+## 2026-05-29 — 스크래퍼 개선 + 크롭 스크롤 속도 (Claude Code)
+
+### 변경 내용
+- `scraper_1688.js` 가격 셀렉터에 신형 1688 OD 레이아웃 추가:
+  `.module-od-main-price .price-info`, `.module-od-main-price .price-comp`, `[class*="item-price-stock"]`
+  - 신형 상세페이지는 가격이 `<span>¥</span><span>3</span><span>.20</span>`로 분할되어 기존 폴백(단일 leaf 파싱)이 실패 → 컨테이너 textContent로 파싱하도록 셀렉터 추가
+- `scraper_1688.js` SKU 추출: `mergeGroup` 및 전략 1a(expand-view-item)·1b(sku-filter-button)의 `>= 2` 조건 → `>= 1`
+  - 옵션이 1개뿐인 상품도 옵션 카드 표시되도록 (사용자가 색상 확인 후 매칭 가능하게)
+- `step2-cropper.js`: 드래그 크롭 자동 스크롤 속도 계수 `* 12` → `* 6`
+- **검증 대기**: 옵션 없는 수량형 단일 상품의 위안가 인식은 다음 세션에서 눈으로 확인 필요
+
+### 코드리뷰 (docs/code-review-2026-05-29.md) 완료 표시
+- #1 IDB 누수, #2 adCert, #3 Gemini API키, #5 옵저버 디바운스, #7 모바일 재시도, #8 가격정책 → 모두 기존 구현으로 해결됨 확인하여 ✅ 표시
+- #4(전역 상태)는 구조적 제약으로 현행 유지. #6/#9/#10~13 보류
+
+---
+
+## 2026-05-29 — 워크스페이스 트랜지션 폴리싱 (Claude Code)
+
+### 변경 내용
+- `index.css` `.sidebar`: `transition: all` → `transition: width, max-width, margin-left` 명시
+- `index.css` `.sidebar`: `margin: 0 auto` → `margin-left: max(0px, calc((100% - 800px) / 2))` — margin-left 트랜지션으로 닫기 시 중앙 이동 부드럽게
+- `index.css` `.workspace`: `transition: all` → `transition: transform, opacity` 명시
+- `index.css` `.workspace.show`: `position: relative` 제거 → position 항상 absolute 유지 (레이아웃 들썩임 제거)
+- `index.css` `.url-section-bar`: `max-height/opacity/padding` collapse 트랜지션 추가
+- `index.css` `.url-section-collapsed` 클래스 신설 (max-height:0, opacity:0, padding/border 0)
+- `workspace.js` `openDetailView`: `hidden` 토글 → `url-section-collapsed` 토글
+- `workspace.js` `closeDetailView`: 워크스페이스 슬라이드 아웃 + 사이드바 복원 동시 진행, URL 막대는 400ms 후 펼침
+
+---
+
+## 2026-05-29 — Gemini 배치 번역+SEO 전환 + 버그 수정 (Claude Code)
+
+### 변경 내용
+- `service-worker.js`: `REFINE_PRODUCT_NAME` 제거 → `GEMINI_TRANSLATE_BATCH` 핸들러 추가
+  - 모델: `gemini-3.1-flash-lite` (상수 `GEMINI_MODEL`으로 분리)
+  - JSON 모드(`responseMimeType: 'application/json'` + `responseSchema`) 사용
+  - 키 없으면 `{ ok:false, noKey:true }` 반환 → 폴백 트리거
+- `scrape.js`: `isKorean` 분기 제거, 항상 원문으로 `GEMINI_TRANSLATE_BATCH` 호출
+  - 성공 시 `title_kr`/`attrs`/`skus`/`sku_groups_translated` + `search_tags` 저장
+  - 실패/키없음 시 Google Translate + `cleanProductName` 폴백
+- `step1-form.js`: 2차 `refineProductName` 호출 제거, `f-name`에 `title_kr` 직접 표시, `f-tags`에 `search_tags` 채움
+- `index.html`: Step 1에 "검색태그 (SEO)" `<input id="f-tags">` 추가
+- `workspace.js`: `saveProgress`/`restoreProgress`에 `tags` 추가, 입력 리스너에 `f-tags` 추가
+- `step4.js`: `searchTags: ''` → `document.getElementById('f-tags')?.value || ''`
+- **버그 수정**: `responseSchema` 제거 → attributes/options 빈 배열 반환 문제 해결
+- **버그 수정**: 크롤링 완료 시 워크스페이스 자동 열림 제거 (이미 열려있을 때만 갱신)
+- **기능 추가**: `pieceWeightScaleInfo`에서 사양(치수) 자동 추출 → `f-spec` 자동 채움
+- **디자인**: 라벨·상세페이지 테이블 셀 높이 증가 (height 44→60px, padding 10→16px / detail_page도 동일 조정)
+
+---
+
+## 2026-05-29 — 크롤링 동시실행 버그 수정 (Claude Code)
+
+### 배경
+크롤링 시작 버튼을 여러 개 빠르게 누르면 연결했던 후보가 사라지고 큐가 깨짐.
+
+### 원인
+1. 스크래핑 결과(`SCRAPE_DONE`)가 `itemId`를 안 들고 와서, 무조건 전역 `state.currentItemId`(마지막 클릭 항목)에만 기록됨 → 나머지는 `scraping`에서 멈춤
+2. `itemId = 'item_' + Date.now()` — 같은 밀리초 클릭 시 동일 ID 충돌로 덮어쓰기
+3. 큐 항목 삭제 시 연결된 후보가 `queued`(숨김) 상태로 고아가 됨
+
+### 변경 — A. itemId 파이프라인 연결
+- `service-worker.js`: `SCRAPE_DONE`/`SCRAPE_ERROR`에 `itemId` 포함 (catch에서도 ERROR 브로드캐스트)
+- `messages.js`: `msg.itemId`를 `onScrapeDone`에 전달, 에러 시 `crawlSettled(itemId)` 호출
+- `scrape.js`: 전역 `currentItemId` 대신 전달받은 `itemId`로 큐/IDB 기록, 처리 중 삭제 가드, 현재 보는 항목일 때만 상세뷰 열기, `finally`에서 `crawlSettled`
+
+### 변경 — B. 순차 크롤링 스케줄러
+- `queue.js`: `_crawlQueue` + `_activeItemId` 기반 스케줄러. 동시에 여러 개 눌러도 하나씩 처리
+- `scheduleCrawl`에 중복 방지(진행 중/대기 중 동일 itemId 무시)
+- `addToQueueFromCandidate`/`addToQueue`/`retryItem` 모두 `scheduleCrawl` 경유
+- `itemId`에 랜덤 접미사 추가 → 충돌 방지
+- `scraping` 상태에도 재크롤링 버튼 노출 → 멈춘 항목 복구
+
+### 변경 — 고아 후보 방지
+- `releaseCandidate`: 큐 항목 삭제 시 연결 후보 정리 (진행 중/에러 → `pending` 복원, 완료 → 제거)
+- `deleteItem`/`clearDoneItems`/`clearAllItems`에 적용
+
+---
+
+## 2026-05-28 — 소싱 후보 UX 보강 A~D 전체 완료 (Claude Code)
+
+### B. 후보 큐 카드 → 쿠팡 이동
+- 썸네일·상품명 클릭 → `window.open(coupangUrl, '_blank')`
+- `coupangUrl` 없으면 비활성
+
+### C. 월판매량 표시
+- 후보 큐 카드에 `월 N개` (하늘색 볼드)
+- 쿠팡 배너 카드 하단에 `월 N개` 추가
+
+### D. 쿠팡 배너 가격 표시
+- 배너 카드 상품명 아래 판매가 추가
+
+### 카드 레이아웃 개선
+- 단일 flex 행 구조: 썸네일 / 상품명 / 가격(볼드) / 월판매량 / 버튼
+- 상태 배지·모바일 배지 제거 — 불필요한 시각 노이즈
+- 가격·월판매량 고정 너비 우측 정렬로 카드 간 세로 비교 용이
+
+### 기타
+- 자동 동기화 제거 — 📲 가져오기 버튼 수동 트리거만 유지
+- 병렬 탭 처리: `Promise.allSettled`로 여러 URL 동시 처리
+- 백그라운드 탭 → 최소화 창(`chrome.windows.create({ state: 'minimized' })`)으로 전환, 탭바에 탭 노출 없음
+
+---
+
+## 2026-05-28 — 소싱 후보 UX 보강 A: 모바일 동기화 백그라운드 탭 전환 (Claude Code)
+
+### 변경 내용
+
+**`extension/ui/modules/mobile-sync.js` 전면 재작성**
+- `fetchCoupangMeta()` (fetch → 403 실패) 제거
+- `extractCoupangData(url)` 신규 작성: 백그라운드 탭 열기 → `executeScript(world: MAIN)` 방식
+  - `window.dataLayer` 폴링 (최대 6초): `item_name`, `price` 추출
+  - `<meta property="og:image">`: `thumbnailUrl` 추출 (`//` → `https:` 보정)
+  - `/next-api/review/batch` API: `categoryId` 추출
+  - `/next-api/review` 페이지네이션: 30일 리뷰 × 10 = `estimatedMonthlySales`
+- 후보 객체 필드 확장: `productName`, `price`, `thumbnailUrl`, `categoryId`, `estimatedMonthlySales`, `coupangUrl` 전부 채움
+- 30초 타임아웃 + 탭 자동 닫기 보장
+
+---
+
+## 2026-05-28 — 통합 이미지 편집 모달 (Claude Code)
+
+### 배경
+크롭과 텍스트 제거를 각각 두 번 모달을 열어야 하는 불편함 해소. 한 모달에서 순차 작업(크롭 → 텍스트 제거)을 완료하고 한 번에 적용.
+
+### 변경 내용
+
+**신규 모듈**
+- `extension/ui/modules/image-editor.js` — 통합 이미지 편집 모달
+  - `openImageEditorModal(dataUrl, callback, { enableCrop })` 단일 진입점
+  - 탭 UI: `✂ 크롭` / `🔤 텍스트 제거` (enableCrop: false면 크롭 탭 숨김)
+  - 크롭 탭: 1:1 정사각형 드래그 + 3등분선 + 어두운 마스크
+  - 탭 전환 시 cropSelection → workingImg 자동 교체, 텍스트 박스 초기화
+  - 최종 적용: 원본 해상도 출력 캔버스에 크롭 + 인페인팅 동시 반영
+
+**삭제**
+- `extension/ui/modules/thumbnail-cropper.js` (통합 모달로 대체)
+- `extension/ui/modules/step2-text-eraser.js` (통합 모달로 대체)
+
+**`extension/ui/modules/step2-imagegrid.js`**
+- "크롭" / "텍스트 제거" 두 버튼 → "편집" 한 버튼으로 단순화
+- `openImageEditorModal(..., { enableCrop: true })` 호출
+
+**`extension/ui/modules/step2-cropper.js`**
+- `openTextEraserModal` → `openImageEditorModal(..., { enableCrop: false })` 교체
+
+**`extension/ui/index.html`**
+- `#text-eraser-modal`, `#thumbnail-cropper-modal` 제거
+- `#image-editor-modal` 신규 (탭 바 + 모드별 도구 영역 + ie-canvas)
+
+**`extension/ui/index.css`**
+- `.ie-tab-bar`, `.ie-tab`, `.ie-tab.active` 탭 스타일 추가
+- `.ie-tools` 모드별 컨텍스트 도구 영역
+- `#ie-canvas` 캔버스 스타일
+
+---
+
+## 2026-05-28 — 이미지 그리드 편집 기능 확장 + 모듈 리팩토링 (Claude Code)
+
+### 배경
+Step 3 이미지 그리드의 썸네일(메인이미지 + SKU 썸네일 + 크롭 이미지)에도 크롭 + 텍스트 제거 기능 추가. `clientToCanvas` 함수 중복 발견 → utils.js로 공용 추출.
+
+### 변경 내용
+
+**신규 모듈**
+- `extension/ui/modules/thumbnail-cropper.js` — 단일 이미지 사각형 크롭 모달. 1:1 비율 토글(`☐ 1:1`), 3등분선 가이드, 어두운 마스크 오버레이.
+
+**`extension/ui/modules/step2-imagegrid.js`**
+- `attachEditButtons(item, img, key)` 헬퍼 추가 — hover 오버레이에 "크롭" + "텍스트 제거" 버튼 부착
+- 모든 그리드 아이템(메인이미지, SKU 썸네일, 크롭 이미지)에 편집 버튼 적용
+- `dataUrlFromBuffer(buffer, mimeType)` 헬퍼 추가 (IDB buffer → dataURL 변환)
+
+**`extension/ui/index.html`**
+- `#thumbnail-cropper-modal` DOM 추가 (tc-canvas, 툴바 4개 버튼)
+
+**`extension/ui/index.css`**
+- `.img-edit-overlay` — 이미지 그리드 아이템 hover 시 하단에 표시되는 버튼 컨테이너
+- `.img-edit-btn` — 파란 배경 편집 버튼 (크롭/텍스트제거)
+- `#tc-btn-square.active` — 1:1 토글 활성화 시 다크 배경
+
+**모듈 리팩토링: `clientToCanvas` → `utils.js`로 추출**
+- `utils.js`에 `export function clientToCanvas(e, canvas)` 추가
+- `step2-text-eraser.js`: 로컬 함수 삭제 → `import { clientToCanvas as _clientToCanvas }` 교체
+- `thumbnail-cropper.js`: 동일 처리
+
+**`docs/MODULES.md`**
+- 신규 4개 모듈 등록 (ocr-worker, inpaint, step2-text-eraser, thumbnail-cropper)
+- `utils.js` 설명에 `clientToCanvas` 위치 명시
+
+---
+
 ## 2026-05-28 — 상세페이지 중국어 텍스트 제거 기능 추가 (Claude Code)
 
 ### 배경

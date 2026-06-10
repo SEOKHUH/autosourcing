@@ -17,11 +17,19 @@ export async function fetchCategory() {
     if (!cookies) { alert('쿠팡 서플라이어 허브에 로그인되어 있는지 확인해주세요'); return; }
     const cookieStr = Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ');
 
-    const resp = await fetch(
-      `https://supplier.coupang.com/qvt/kan-categories/search?keyword=${categoryId}&searchType=kanCategoryIds`,
-      { headers: { Cookie: cookieStr, Accept: 'application/json' } }
-    );
-    if (!resp.ok) throw new Error('서버 응답 오류: ' + resp.status);
+    let resp, lastErr;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * attempt));
+      try {
+        resp = await fetch(
+          `https://supplier.coupang.com/qvt/kan-categories/search?keyword=${categoryId}&searchType=kanCategoryIds`,
+          { headers: { Cookie: cookieStr, Accept: 'application/json' } }
+        );
+        if (resp.ok) break;
+        lastErr = new Error('서버 응답 오류: ' + resp.status);
+      } catch (e) { lastErr = e; }
+    }
+    if (!resp?.ok) throw lastErr || new Error('카테고리 조회 실패');
     const data = await resp.json();
     let items = Array.isArray(data) ? data : [];
     if (!items.length && data?.data) items = Array.isArray(data.data) ? data.data : [data.data];

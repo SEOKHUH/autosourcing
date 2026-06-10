@@ -64,11 +64,14 @@ export const IDB = (() => {
 
   async function clearItem(itemId) {
     const db = await open();
-    const all = await getAll(itemId + '_');
+    const all = await getAll();
+    const prefixes = ['main_', 'detail_', 'skuthumb_', 'crop_', 'label_'].map(p => p + itemId);
+    const toDelete = all.filter(r => prefixes.some(p => r.key.startsWith(p)));
+    if (!toDelete.length) return;
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite');
       const store = tx.objectStore(STORE);
-      all.forEach(r => store.delete(r.key));
+      toDelete.forEach(r => store.delete(r.key));
       tx.oncomplete = resolve;
       tx.onerror    = (e) => reject(e.target.error);
     });

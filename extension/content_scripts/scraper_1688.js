@@ -21,86 +21,28 @@
     banner.id = 'heaor-source-banner';
     banner.style.cssText = [
       'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:2147483647',
-      'background:#fff', 'padding:10px 16px',
-      'display:flex', 'align-items:center', 'gap:12px',
+      'background:#fff', 'padding:6px 16px',
+      'display:flex', 'align-items:center', 'gap:0',
       'font-family:sans-serif',
       'border-bottom:1.5px solid #e2e4e9', 'box-shadow:0 2px 8px rgba(0,0,0,0.08)',
     ].join(';');
 
-    // 라벨
-    const label = document.createElement('span');
-    label.textContent = '소싱할 상품:';
-    label.style.cssText = 'white-space:nowrap;color:#888;font-size:12px;font-weight:600;flex-shrink:0;align-self:center;';
-    banner.appendChild(label);
-
-    // 카드 슬라이더 컨테이너
-    const slider = document.createElement('div');
-    slider.style.cssText = [
-      'display:flex', 'gap:8px', 'overflow-x:auto', 'flex:1',
-      'scrollbar-width:none', 'padding:2px 0', 'align-items:flex-start',
-    ].join(';');
-    slider.style.msOverflowStyle = 'none';
+    const BTN = 'display:block;width:100%;background:none;border:1.5px solid #e2e4e9;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;color:#444;font-family:sans-serif;text-align:center;box-sizing:border-box;';
 
     let selectedId = candidates[0].id;
 
-    candidates.forEach((c, i) => {
-      const card = document.createElement('div');
-      card.dataset.id = c.id;
-      card.style.cssText = [
-        'display:flex', 'flex-direction:column',
-        'width:82px', 'flex-shrink:0',
-        'border-radius:8px', 'overflow:hidden', 'cursor:pointer',
-        'border:1.5px solid ' + (i === 0 ? '#0ea5e9' : '#e2e4e9'),
-        'background:' + (i === 0 ? 'rgba(14,165,233,0.08)' : '#f4f6fb'),
-        'transition:border-color 0.15s,background 0.15s',
-      ].join(';');
+    // ── 왼쪽 컨트롤 영역 (세로 배치) ──
+    const controls = document.createElement('div');
+    controls.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;gap:6px;flex-shrink:0;padding-right:12px;border-right:1.5px solid #e2e4e9;margin-right:12px;min-width:92px;';
 
-      // 썸네일
-      const thumb = document.createElement('img');
-      thumb.src = c.thumbnailUrl || '';
-      thumb.referrerPolicy = 'no-referrer';
-      thumb.className = 'heaor-banner-thumb';
-      thumb.style.cssText = 'background:#e8eaee;';
-      card.appendChild(thumb);
+    const label = document.createElement('div');
+    label.textContent = '소싱할 상품';
+    label.style.cssText = 'font-size:11px;font-weight:700;color:#888;white-space:nowrap;text-align:center;';
+    controls.appendChild(label);
 
-      // 상품명
-      const name = document.createElement('span');
-      name.textContent = c.productName || '(이름 없음)';
-      name.style.cssText = [
-        'font-size:10px', 'line-height:1.35', 'color:#333',
-        'padding:4px 6px 5px',
-        'display:-webkit-box', '-webkit-line-clamp:2',
-        '-webkit-box-orient:vertical', 'overflow:hidden',
-      ].join(';');
-      card.appendChild(name);
-
-      card.addEventListener('click', () => {
-        slider.querySelectorAll('[data-id]').forEach(el => {
-          el.style.borderColor = '#e2e4e9';
-          el.style.background = '#f4f6fb';
-        });
-        card.style.borderColor = '#0ea5e9';
-        card.style.background = 'rgba(14,165,233,0.08)';
-        selectedId = c.id;
-      });
-
-      slider.appendChild(card);
-    });
-
-    banner.appendChild(slider);
-
-    // 우측 영역: URL 연결 버튼 + 닫기
-    const right = document.createElement('div');
-    right.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;align-self:center;';
-
-    // URL 연결 버튼
     const btn = document.createElement('button');
     btn.textContent = 'URL 연결 →';
-    btn.style.cssText = [
-      'background:#0ea5e9', 'color:#fff', 'border:none', 'border-radius:6px',
-      'padding:7px 14px', 'font-size:12px', 'font-weight:700', 'cursor:pointer',
-      'white-space:nowrap',
-    ].join(';');
+    btn.style.cssText = BTN + 'background:#0ea5e9;border-color:#0ea5e9;color:#fff;';
     btn.addEventListener('click', () => {
       chrome.runtime.sendMessage({
         type: 'LINK_1688_TO_CANDIDATE',
@@ -111,22 +53,87 @@
           btn.textContent = '✓ 연결됨';
           btn.disabled = true;
           btn.style.background = '#16a34a';
+          btn.style.borderColor = '#16a34a';
           setTimeout(() => banner.remove(), 1500);
         }
       });
     });
-    right.appendChild(btn);
+    controls.appendChild(btn);
 
-    // 닫기 버튼
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '닫기';
-    closeBtn.style.cssText = 'background:none;border:none;color:#aaa;font-size:10px;cursor:pointer;padding:0;white-space:nowrap;';
+    closeBtn.style.cssText = BTN;
     closeBtn.addEventListener('click', () => banner.remove());
-    right.appendChild(closeBtn);
+    controls.appendChild(closeBtn);
 
-    banner.appendChild(right);
+    banner.appendChild(controls);
 
-    document.body.insertBefore(banner, document.body.firstChild);
+    // ── 카드 슬라이더 ──
+    const slider = document.createElement('div');
+    slider.style.cssText = 'display:flex;gap:8px;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px 0;align-items:stretch;';
+    slider.style.msOverflowStyle = 'none';
+
+    const applyCardStyle = (card, selected) => {
+      card.style.borderColor = selected ? '#0ea5e9' : '#e2e4e9';
+      card.style.background = selected ? 'rgba(14,165,233,0.08)' : '#f8f9fb';
+    };
+
+    candidates.forEach((c, i) => {
+      const card = document.createElement('div');
+      card.dataset.id = c.id;
+      card.style.cssText = [
+        'display:flex', 'flex-direction:column',
+        'width:90px', 'flex-shrink:0',
+        'border-radius:8px', 'overflow:hidden', 'cursor:pointer',
+        'border:1.5px solid #e2e4e9', 'background:#f8f9fb',
+        'transition:border-color 0.15s,background 0.15s',
+      ].join(';');
+      applyCardStyle(card, i === 0);
+
+      const thumb = document.createElement('img');
+      thumb.src = c.thumbnailUrl || '';
+      thumb.referrerPolicy = 'no-referrer';
+      thumb.className = 'heaor-banner-thumb';
+      thumb.style.cssText = 'background:#eef0f4;flex-shrink:0;';
+      card.appendChild(thumb);
+
+      const info = document.createElement('div');
+      info.style.cssText = 'padding:4px 6px 5px;display:flex;flex-direction:column;flex:1;';
+
+      const name = document.createElement('span');
+      name.textContent = c.productName || '(이름 없음)';
+      name.style.cssText = 'font-size:10px;line-height:1.35;color:#1a1a2e;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;';
+      info.appendChild(name);
+
+      const meta = document.createElement('div');
+      meta.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:1px;margin-top:auto;padding-top:4px;';
+      if (c.price) {
+        const priceEl = document.createElement('span');
+        priceEl.textContent = c.price.toLocaleString() + '원';
+        priceEl.style.cssText = 'font-size:12px;font-weight:700;color:#1a1a2e;';
+        meta.appendChild(priceEl);
+      }
+      if (c.estimatedMonthlySales > 0) {
+        const salesEl = document.createElement('span');
+        salesEl.textContent = '월 ' + c.estimatedMonthlySales.toLocaleString() + '개';
+        salesEl.style.cssText = 'font-size:12px;font-weight:700;color:#0ea5e9;';
+        meta.appendChild(salesEl);
+      }
+      info.appendChild(meta);
+      card.appendChild(info);
+
+      card.addEventListener('click', () => {
+        slider.querySelectorAll('[data-id]').forEach(el => applyCardStyle(el, false));
+        applyCardStyle(card, true);
+        selectedId = c.id;
+      });
+
+      slider.appendChild(card);
+    });
+
+    banner.appendChild(slider);
+
+    document.body.appendChild(banner);
   });
 })();
 
@@ -201,6 +208,8 @@ function scrapeFromDOM(log) {
 
     // 2. 대표 가격 추출 (Price)
     const priceSels = [
+      '.module-od-main-price .price-info', '.module-od-main-price .price-comp', // 신형 1688 OD 레이아웃
+      '[class*="item-price-stock"]',                                            // 수량형 단일 상품 가격
       '[class*="price-text"]', '[class*="price-value"]', '[class*="price-num"]',
       '[class*="priceText"]', '[class*="offer-price"] em', '.price-original',
       '[class*="realPrice"]', '[class*="sale-price"]'
@@ -221,6 +230,15 @@ function scrapeFromDOM(log) {
         if ((txt.includes('¥') || txt.includes('￥')) && txt.length < 20) {
           const p = parsePrice(txt);
           if (p > 0) priceCandidates.push(p);
+        }
+        // ¥ 기호만 단독으로 있는 span → 부모의 textContent 전체를 파싱
+        // (예: <span>¥</span><span>0.10</span> 구조 대응)
+        if ((txt === '¥' || txt === '￥') && el.parentElement) {
+          const parentTxt = el.parentElement.textContent.trim();
+          if (parentTxt.length < 20) {
+            const p = parsePrice(parentTxt);
+            if (p > 0) priceCandidates.push(p);
+          }
         }
       }
     }
@@ -325,7 +343,7 @@ function scrapeFromDOM(log) {
           tempMap.set(sku.name, sku);
         }
       }
-      if (tempMap.size >= 2) {
+      if (tempMap.size >= 1) {
         for (const [n, s] of tempMap) {
           skuMap.set(n, s);
           if (s.imageUrl) imgSet.add(s.imageUrl);
@@ -342,7 +360,7 @@ function scrapeFromDOM(log) {
     // 실제 구조: div.expand-view-item > img.ant-image-img + span.item-label + span.item-price-stock
     {
       const expandItems = document.querySelectorAll('[class*="expand-view-item"]');
-      if (expandItems.length >= 2) {
+      if (expandItems.length >= 1) {
         const group = Array.from(expandItems);
         mergeGroup(group, 'sku-expand-view-item');
       }
@@ -350,7 +368,7 @@ function scrapeFromDOM(log) {
 
     // ── 전략 1b: sku-filter-button 탐색 (신형 1688 색상 버튼 구조) ─────────────
     // 실제 구조: button.sku-filter-button > span.label-name
-    if (skuMap.size < 2) {
+    if (skuMap.size < 1) {
       const btnGroups = new Map(); // 부모 컨테이너 → [버튼 목록]
       document.querySelectorAll('.sku-filter-button, [class*="sku-filter-button"]').forEach(btn => {
         const nameEl = btn.querySelector('.label-name, [class*="label-name"]');
@@ -363,9 +381,9 @@ function scrapeFromDOM(log) {
       });
       let bestBtnGroup = [];
       for (const [, group] of btnGroups) {
-        if (group.length >= 2 && group.length > bestBtnGroup.length) bestBtnGroup = group;
+        if (group.length >= 1 && group.length > bestBtnGroup.length) bestBtnGroup = group;
       }
-      if (bestBtnGroup.length >= 2) {
+      if (bestBtnGroup.length >= 1) {
         for (const { name } of bestBtnGroup) {
           if (!skuMap.has(name)) skuMap.set(name, { name, price: 0, imageUrl: '' });
         }

@@ -4,7 +4,7 @@ import { state } from './state.js';
 import { $, dataUrlToArrayBuffer } from './utils.js';
 import { IDB } from './idb.js';
 import { saveProgress } from './workspace.js';
-import { openTextEraserModal } from './step2-text-eraser.js';
+import { openImageEditorModal } from './image-editor.js';
 
 export async function renderDetailImgList() {
   const list = $('detail-img-list');
@@ -68,8 +68,8 @@ export async function renderDetailImgList() {
     const sr = scrollEl.getBoundingClientRect();
     const ZONE = 60;
     let speed = 0;
-    if (e.clientY > sr.bottom - ZONE)   speed = (e.clientY - (sr.bottom - ZONE)) / ZONE * 12;
-    else if (e.clientY < sr.top + ZONE) speed = (e.clientY - (sr.top    + ZONE)) / ZONE * 12;
+    if (e.clientY > sr.bottom - ZONE)   speed = (e.clientY - (sr.bottom - ZONE)) / ZONE * 6;
+    else if (e.clientY < sr.top + ZONE) speed = (e.clientY - (sr.top    + ZONE)) / ZONE * 6;
     if (scrollRaf) cancelAnimationFrame(scrollRaf);
     if (speed !== 0) {
       const doScroll = () => { scrollEl.scrollTop += speed; if (selDiv) scrollRaf = requestAnimationFrame(doScroll); };
@@ -157,14 +157,14 @@ export function renderCroppedItem(dataUrl, key) {
     const idx = state.croppedImageKeys.indexOf(key);
     if (idx < 0) return;
     const currentDataUrl = state.croppedImages[idx];
-    openTextEraserModal(currentDataUrl, async (newDataUrl) => {
+    openImageEditorModal(currentDataUrl, async (newDataUrl) => {
       const i = state.croppedImageKeys.indexOf(key);
       if (i < 0) return;
       state.croppedImages[i] = newDataUrl;
       await IDB.put(key, dataUrlToArrayBuffer(newDataUrl), 'crop', 'image/jpeg');
       img.src = newDataUrl;
       saveProgress();
-    });
+    }, { enableCrop: false });
   });
 
   item.appendChild(img);

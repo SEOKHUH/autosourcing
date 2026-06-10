@@ -75,9 +75,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return true;
     }
 
-    // UI → 상품명 AI 정제 요청 (Gemini)
-    case 'REFINE_PRODUCT_NAME': {
-      handleRefineProductName(msg.name, sendResponse);
+    // UI → Gemini 배치 번역+SEO 요청
+    case 'GEMINI_TRANSLATE_BATCH': {
+      handleGeminiTranslateBatch(msg.title, msg.attributes, msg.options, sendResponse);
       return true;
     }
 
@@ -98,26 +98,47 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       handleRemoveCandidate(msg.candidateId, sendResponse);
       return true;
     }
+    case 'NAVIGATE_TAB': {
+      chrome.tabs.update(sender.tab.id, { url: msg.url });
+      return false;
+    }
   }
 });
 
-// ── Gemini API 상품명 정제 ────────────────────────────────────────────────────
-const GEMINI_API_KEY = 'AIzaSyASNebUbDTaO15i6bXp3NrzSFmAOs0uv58';
+// ── Gemini 배치 번역+SEO ──────────────────────────────────────────────────────
+const GEMINI_MODEL = 'gemini-3.1-flash-lite'; // 교체 시 이 한 줄만 수정
 
-async function handleRefineProductName(name, sendResponse) {
+async function handleGeminiTranslateBatch(title, attributes, options, sendResponse) {
   try {
-    const prompt = `다음은 중국 쇼핑몰에서 수집된 상품명을 한국어로 번역한 것입니다. 한국의 쿠팡이나 네이버 스마트스토어에서 판매하기 좋은 깔끔하고 간결한 상품명으로 정제해주세요. 수식어, 도매/공장 관련 용어, 브랜드홍보 문구는 제거하고 핵심 상품명만 1줄로 출력하세요. 다른 설명 없이 정제된 상품명만 출력하세요.\n원본: ${name}`;
+    const { mobileSyncSettings } = await chrome.storage.local.get('mobileSyncSettings');
+    const apiKey = mobileSyncSettings?.geminiApiKey?.trim();
+    if (!apiKey) {
+      sendResponse({ ok: false, noKey: true });
+      return;
+    }
+
+    const prompt = `당신은 중국 1688 상품 데이터를 한국 쿠팡·스마트스토어용으로 번역·정제하는\n이커머스 전문가입니다. 입력 JSON의 각 필드를 한국어로 변환해\n동일 구조의 JSON으로만 출력하세요.\n\n[productName]\n- 핵심 상품명을 자연스러운 한국어로. 검색 노출을 위해 핵심 키워드(품목·용도·특징)를\n  자연스럽게 포함하되, 과장 수식어(고품질/최신/다기능/인기 등)와 도매·공장·직판·홍보\n  문구는 제거.\n- 브랜드명은 절대 넣지 말 것(브랜드는 별도로 붙음).\n- 50자 이내. 키워드 나열·반복(스터핑) 금지.\n\n[searchTags]\n- 이 상품을 찾을 만한 한국어 검색어 5~10개.\n- 상품명에 이미 들어간 단어와 겹치지 않는 보완 검색어 위주(연관어·동의어·용도·상황).\n- 정확하고 연관성 높은 것만. 부정확하거나 과장된 태그 금지.\n\n[attributes]\n- 각 항목의 name(속성명)과 value(값)를 정확히 한국어로 번역. 재질·사양 등 사실 정보\n  누락 금지.\n- 숫자·단위·치수(예: 110*98mm, 41g)·영문 소재코드(예: PP, ABS, PET)·모델명은\n  원본 그대로 유지(번역·변형 금지).\n\n[options]\n- 색상·사양 등 옵션명을 자연스러운 한국어로(색상은 통용되는 한국어 색상명).\n- 숫자·치수는 원본 유지.\n\n[공통 규칙]\n- 동일한 원문은 반드시 동일하게 번역(옵션·속성이 이름 기준으로 매칭되므로 일관성 필수).\n- 이미 한국어인 텍스트는 어색한 부분만 다듬기.\n- 입력 배열의 순서와 개수를 그대로 유지.\n- 설명·주석 없이 JSON만 출력.\n\n예시 productName: "新款厨房多功能不锈钢刀具套装批发" → "스테인리스 주방 칼 세트"\n\n입력:\n${JSON.stringify({ productName: title, attributes: attributes || [], options: options || [] })}`;
+
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json' },
+        }),
       }
     );
     const data = await resp.json();
-    const refined = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || name;
-    sendResponse({ ok: true, refined });
+    if (data.error) {
+      sendResponse({ ok: false, error: data.error.message });
+      return;
+    }
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!raw) { sendResponse({ ok: false, error: 'empty response' }); return; }
+    const parsed = JSON.parse(raw);
+    sendResponse({ ok: true, result: parsed });
   } catch (e) {
     sendResponse({ ok: false, error: e.message });
   }
@@ -125,6 +146,7 @@ async function handleRefineProductName(name, sendResponse) {
 
 // ── 스크래핑 실행 ──────────────────────────────────────────────────────────────
 async function handleScrapeRequest(msg, sendResponse) {
+  const itemId = msg.itemId;
   try {
     const url = msg.url;
 
@@ -132,7 +154,7 @@ async function handleScrapeRequest(msg, sendResponse) {
     const bgResult = await tryBackgroundFetch(url);
     if (bgResult) {
       broadcastToUI({ type: 'SCRAPE_LOG', text: `✅ 수집 완료 — SKU ${bgResult.skus?.length || 0}개, 이미지 ${bgResult.images?.length || 0}장, 속성 ${bgResult.attributes?.length || 0}개` });
-      broadcastToUI({ type: 'SCRAPE_DONE', result: bgResult });
+      broadcastToUI({ type: 'SCRAPE_DONE', result: bgResult, itemId });
       sendResponse({ ok: true });
       return;
     }
@@ -140,10 +162,11 @@ async function handleScrapeRequest(msg, sendResponse) {
     // 실패 = 로그인 필요
     const errMsg = '1688 로그인이 필요합니다. 아래 탭에서 로그인 후 다시 시도해주세요.';
     broadcastToUI({ type: 'SCRAPE_LOG', text: `❌ ${errMsg}` });
-    broadcastToUI({ type: 'SCRAPE_ERROR', error: errMsg });
+    broadcastToUI({ type: 'SCRAPE_ERROR', error: errMsg, itemId });
     chrome.tabs.create({ url: 'https://login.1688.com/member/signin.htm' });
     sendResponse({ ok: false, error: errMsg });
   } catch (e) {
+    broadcastToUI({ type: 'SCRAPE_ERROR', error: e.message, itemId });
     sendResponse({ ok: false, error: e.message });
   }
 }
@@ -554,11 +577,15 @@ function mapContextData(ctx, htmlText) {
 
   const attributes = htmlText ? parseAttributesFromHtml(htmlText) : [];
 
-  // 무게 폴백: 속성에 없으면 pieceWeightScale에서 추출
-  if (!attributes.some(a => a.name === '무게')) {
-    const pieceInfo = data?.productPackInfo?.fields?.pieceWeightScale?.pieceWeightScaleInfo;
-    const weight_g = pieceInfo?.[0]?.weight ?? null;
-    if (weight_g !== null) attributes.push({ name: '무게', value: `${weight_g}g` });
+  // 무게·사양 폴백: 속성에 없으면 pieceWeightScale에서 추출
+  const pieceInfo = data?.productPackInfo?.fields?.pieceWeightScale?.pieceWeightScaleInfo;
+  const pieceFirst = pieceInfo?.[0];
+  if (!attributes.some(a => a.name === '무게') && pieceFirst?.weight != null) {
+    attributes.push({ name: '무게', value: `${pieceFirst.weight}g` });
+  }
+  if (!attributes.some(a => a.name === '사양') && pieceFirst?.length && pieceFirst?.width && pieceFirst?.height) {
+    const fmt = v => parseFloat(v) % 1 === 0 ? String(parseInt(v)) : String(parseFloat(v));
+    attributes.push({ name: '사양', value: `${fmt(pieceFirst.length)}*${fmt(pieceFirst.width)}*${fmt(pieceFirst.height)}cm` });
   }
 
   const detailUrl  = data.description?.fields?.detailUrl || '';

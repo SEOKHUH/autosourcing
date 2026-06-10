@@ -3,8 +3,7 @@
 import { state } from './state.js';
 import { $, dataUrlToArrayBuffer } from './utils.js';
 import { IDB } from './idb.js';
-import { openTextEraserModal } from './step2-text-eraser.js';
-import { openThumbnailCropperModal } from './thumbnail-cropper.js';
+import { openImageEditorModal } from './image-editor.js';
 
 let _showOptionPicker = null;
 export function initImageGrid({ showOptionPicker }) {
@@ -24,36 +23,21 @@ function attachEditButtons(item, img, key) {
   const overlay = document.createElement('div');
   overlay.className = 'img-edit-overlay';
 
-  const cropBtn = document.createElement('button');
-  cropBtn.className   = 'img-edit-btn img-edit-crop';
-  cropBtn.textContent = '크롭';
-  cropBtn.addEventListener('click', async (e) => {
+  const editBtn = document.createElement('button');
+  editBtn.className   = 'img-edit-btn';
+  editBtn.textContent = '편집';
+  editBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     const rec = await IDB.get(key);
     if (!rec) return;
     const dataUrl = await dataUrlFromBuffer(rec.buffer, rec.mimeType);
-    openThumbnailCropperModal(dataUrl, async (newDataUrl) => {
+    openImageEditorModal(dataUrl, async (newDataUrl) => {
       await IDB.put(key, dataUrlToArrayBuffer(newDataUrl), rec.url, 'image/jpeg');
       img.src = newDataUrl;
-    });
+    }, { enableCrop: true });
   });
 
-  const eraseBtn = document.createElement('button');
-  eraseBtn.className   = 'img-edit-btn img-edit-erase';
-  eraseBtn.textContent = '텍스트 제거';
-  eraseBtn.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const rec = await IDB.get(key);
-    if (!rec) return;
-    const dataUrl = await dataUrlFromBuffer(rec.buffer, rec.mimeType);
-    openTextEraserModal(dataUrl, async (newDataUrl) => {
-      await IDB.put(key, dataUrlToArrayBuffer(newDataUrl), rec.url, 'image/jpeg');
-      img.src = newDataUrl;
-    });
-  });
-
-  overlay.appendChild(cropBtn);
-  overlay.appendChild(eraseBtn);
+  overlay.appendChild(editBtn);
   item.appendChild(overlay);
 }
 

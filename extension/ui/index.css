@@ -1,4 +1,55 @@
 /* index.css — 헤오르 AutoSourcing (좌우 분할 SaaS 스타일 레이아웃) */
+
+/* ── 모바일 동기화 설정 모달 ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.hidden { display: none; }
+.modal-box {
+  background: #fff;
+  border-radius: 10px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border-color-default);
+}
+.modal-title { font-weight: 600; font-size: 14px; }
+.modal-body { padding: 16px 20px; }
+.modal-footer {
+  padding: 12px 20px 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+.field-label { font-size: 12px; font-weight: 500; color: #555; }
+
+/* ⚙ 아이콘 전용 버튼 */
+.btn-icon {
+  width: 36px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* 모바일 출처 배지 */
+.cand-mobile-badge {
+  font-size: 10px;
+  background: #e0f0ff;
+  color: #0ea5e9;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 4px;
+}
 :root {
   --border-color-default: #e2e4e9;
   --border-color-light: #edf0f5;
@@ -38,6 +89,17 @@ body {
   border-bottom: var(--border-width) solid var(--border-color-default);
   padding: 10px 20px;
   flex-shrink: 0;
+  max-height: 80px;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), padding 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), border-bottom-width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.url-section-bar.url-section-collapsed {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom-width: 0;
 }
 .url-section-inner {
   max-width: 800px;
@@ -48,11 +110,12 @@ body {
 .sidebar {
   width: 100%;
   max-width: 800px;
-  margin: 0 auto;
+  margin-left: max(0px, calc((100% - 800px) / 2));
+  margin-right: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), max-width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), margin-left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow: hidden;
 }
 /* 우측 작업창이 열렸을 때 축소되는 사이드바 상태 */
@@ -109,7 +172,7 @@ body {
 /* ── 대기열 패널 내부 ── */
 .queue-header-bar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 6px;
   padding: 8px 12px;
   border-bottom: var(--border-width) solid var(--border-color-default);
@@ -138,13 +201,12 @@ body {
   position: absolute;
   right: 0; top: 0; bottom: 0;
   width: calc(100% - 300px);
-  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   z-index: 50;
 }
 .workspace.show {
   transform: translateX(0);
   opacity: 1;
-  position: relative;
 }
 
 .workspace-header {
@@ -360,6 +422,24 @@ body {
   margin-bottom: 16px;
 }
 
+/* ── 쿠팡 원본 참고 카드 ── */
+.coupang-ref-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+}
+.coupang-ref-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.coupang-ref-name  { flex: 1; font-size: 13px; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.coupang-ref-meta  { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.coupang-ref-price { font-size: 13px; font-weight: 700; color: #0369a1; }
+.coupang-ref-sales { font-size: 12px; color: #0ea5e9; }
+.coupang-ref-link  { flex-shrink: 0; font-size: 12px; color: #0ea5e9; border-color: #bae6fd; }
+
 /* ── 카드 기본형 ── */
 .card {
   background: #fff;
@@ -541,7 +621,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
   border-radius: 10px;
   border: var(--border-width) solid var(--border-color-default);
   background: #fff;
-  overflow: hidden;
   position: relative;
   transition: all 0.15s;
   padding: 12px 14px;
@@ -582,6 +661,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 .badge-registering { background: #e0f2fe; color: #0284c7; }
 .badge-done        { background: #f0fdf4; color: #16a34a; }
 .badge-error       { background: #fff0f2; color: #e94560; }
+.badge-price-warn  { background: #fff7ed; color: #c2410c; }
 
 .q-del-btn {
   position: absolute; top: 6px; right: 6px;
@@ -593,8 +673,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 .q-card:hover .q-del-btn { opacity: 1; }
 .q-del-btn:hover { background: #e94560; }
 
-.q-retry-btn { font-size: 11px; margin-top: 6px; padding: 4px; width: 100%; border: 1px solid #e94560; color: #e94560; background: #fff; border-radius: 4px; cursor: pointer; }
-.q-retry-btn:hover { background: #e94560; color: #fff; }
+.q-card-meta { display: flex; flex-direction: column; align-items: stretch; gap: 6px; flex-shrink: 0; width: 72px; }
+.q-card-meta .q-badge { text-align: center; align-self: auto; }
+.q-retry-btn { font-size: 11px; padding: 3px 0; text-align: center; border: 1px solid #0ea5e9; color: #0ea5e9; background: #fff; border-radius: 4px; cursor: pointer; }
+.q-retry-btn:hover { background: #0ea5e9; color: #fff; }
 .q-progress-badge { display: inline-block; font-size: 10px; font-weight: 600; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 6px; margin-top: 4px; }
 
 /* ── 스텝 1: 옵션 & 이미지 리스트 (상하 배치) ── */
@@ -735,13 +817,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 .img-grid-item:hover .img-edit-overlay { opacity: 1; }
 .img-edit-btn { flex: 1; padding: 3px 0; border: none; cursor: pointer; background: rgba(14, 165, 233, 0.92); color: #fff; font-size: 10px; font-weight: 600; }
 .img-edit-btn:hover { background: rgba(2, 132, 199, 0.95); }
-#tc-btn-square.active { background: #1a1a2e; color: #fff; }
-
 /* ── 상세이미지 크롭 구역 ── */
 .detail-img-list { position: relative; display: flex; flex-direction: column; gap: 0; background: #fff; border: var(--border-width) solid var(--border-color-light); }
 .detail-img-item { position: relative; cursor: crosshair; }
 .detail-img-item img { width: 70%; display: block; margin: 0 auto; border-radius: 0; border: none; }
-.crop-selection { position: absolute; border: 2px solid #e94560; background: rgba(233,69,96,0.15); pointer-events: none; }
+.crop-selection { position: absolute; border: 2px solid #0ea5e9; background: rgba(14,165,233,0.15); pointer-events: none; }
 .cropped-list { display: flex; gap: 8px; min-height: 80px; margin-bottom: 12px; border: var(--border-width) dashed #cbd0d9; border-radius: 8px; padding: 8px; align-items: center; justify-content: flex-start; flex-wrap: wrap; }
 .cropped-list:empty::before { content: '상세페이지에 들어갈 이미지를 드래그하거나 비워두세요.'; color: #aaa; font-size: 12px; margin: auto; }
 .cropped-item { position: relative; width: 70px; height: 70px; border-radius: 6px; overflow: hidden; border: 2px solid #1a1a2e; }
@@ -759,7 +839,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 .cropped-item:hover .crop-erase-btn { opacity: 1; }
 .crop-erase-btn:hover { background: rgba(2, 132, 199, 0.95); }
 
-/* ── 텍스트 제거 모달 (글래스모피즘) ── */
+/* ── 통합 이미지 편집 모달 ── */
 .text-eraser-backdrop {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.45);
@@ -778,15 +858,27 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
   overflow: hidden;
 }
 .text-eraser-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 20px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
   border-bottom: 1px solid #e2e4e9;
   background: #fff;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
-.te-toolbar-title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
-.te-toolbar-actions { display: flex; gap: 6px; }
-#te-btn-preview.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+.te-toolbar-actions { display: flex; gap: 6px; margin-left: auto; }
+/* 탭 바 */
+.ie-tab-bar { display: flex; gap: 2px; background: #f0f2f5; border-radius: 8px; padding: 3px; }
+.ie-tab {
+  padding: 5px 14px; font-size: 12px; font-weight: 600;
+  border: none; border-radius: 6px; cursor: pointer;
+  background: transparent; color: #666;
+  transition: background 0.15s, color 0.15s;
+}
+.ie-tab.active { background: #fff; color: #1a1a2e; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+.ie-tab:hover:not(.active) { color: #1a1a2e; }
+/* 모드별 컨텍스트 도구 */
+.ie-tools { display: flex; gap: 6px; }
+#ie-btn-preview.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
 .text-eraser-canvas-wrap {
   flex: 1;
   background: #2a2d35;
@@ -794,8 +886,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
   overflow: auto;
   padding: 20px;
 }
-#te-canvas {
-  max-width: 100%; max-height: 100%;
+#ie-canvas {
   display: block;
   background: #fff;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
@@ -871,15 +962,16 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
   border-color: #cbd0d9;
   background: #fbfbfc;
 }
-.cand-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: var(--border-width) solid var(--border-color-light); }
-.cand-thumb-ph { width: 60px; height: 60px; background: #f0f2f8; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-.cand-body { flex: 1; min-width: 0; }
+.cand-thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: var(--border-width) solid var(--border-color-light); }
+.cand-thumb-ph { width: 52px; height: 52px; background: #f0f2f8; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.cand-thumb.cand-clickable, .cand-thumb-ph.cand-clickable { cursor: pointer; }
+.cand-thumb.cand-clickable:hover { opacity: 0.8; }
+.cand-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cand-name.cand-clickable:hover { color: #0ea5e9; text-decoration: underline; cursor: pointer; }
+.cand-price { flex-shrink: 0; width: 72px; text-align: right; font-size: 12px; font-weight: 700; color: #1a1a2e; }
+.cand-sales { flex-shrink: 0; width: 72px; text-align: right; font-size: 12px; font-weight: 700; color: #0ea5e9; }
 .cand-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .cand-del-btn { background: none; border: none; color: #bbb; font-size: 14px; cursor: pointer; padding: 0 3px; line-height: 1; }
 .cand-del-btn:hover { color: #e94560; }
-.cand-name { font-size: 13px; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-.cand-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11px; color: #888; }
-.cand-status-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #f0f2f8; color: #6b7280; }
-.cand-status-badge.cand-status-linked { background: #e0f2fe; color: #0284c7; }
 .cand-manual-row { display: flex; gap: 4px; align-items: center; }
 .cand-url-input { flex: 1; font-size: 11px; padding: 4px 6px; border: 1px solid #d0d4de; border-radius: 4px; min-width: 0; }

@@ -98,7 +98,7 @@ export const HtmlRenderer = (() => {
     const totalHeight = iframeDoc.querySelector('.element').scrollHeight;
 
     const canvas = await captureElement(iframeDoc, '.element', {
-      width: 800, height: totalHeight, scale: 1, foreignObjectRendering: false,
+      width: 800, height: totalHeight, scale: 1, foreignObjectRendering: true,
     });
     document.body.removeChild(iframe);
     return canvas.toDataURL('image/png');

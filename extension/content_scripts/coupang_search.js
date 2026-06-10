@@ -24,7 +24,8 @@ function renderCoupangBanner() {
   // SPA 이동 시 DOM에서 분리된 경우 재생성 허용
   if (_bannerEl && !document.body.contains(_bannerEl)) _bannerEl = null;
 
-  if (!_bannerCandidates.length) {
+  const isDetailPage = /\/vp\/products\/\d+/.test(location.href);
+  if (!_bannerCandidates.length && !isDetailPage) {
     _bannerEl?.remove();
     _bannerEl = null;
     return;
@@ -35,54 +36,87 @@ function renderCoupangBanner() {
     _bannerEl.id = 'heaor-coupang-banner';
     _bannerEl.style.cssText = [
       'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:2147483647',
-      'background:#fff', 'padding:8px 16px',
-      'display:flex', 'align-items:center', 'gap:12px',
+      'background:#fff', 'padding:6px 16px',
+      'display:flex', 'align-items:center', 'gap:0',
       'font-family:sans-serif',
       'border-bottom:1.5px solid #e2e4e9', 'box-shadow:0 2px 8px rgba(0,0,0,0.08)',
     ].join(';');
-    document.body.insertBefore(_bannerEl, document.body.firstChild);
+    // 세로 휠 → 가로 스크롤 변환 (트랙패드 가로 스와이프는 자연 처리)
+    _bannerEl.addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // 트랙패드 가로 스와이프: 자연 처리
+      const sl = _bannerEl.querySelector('.heaor-slider');
+      if (!sl) return;
+      e.preventDefault();
+      sl.scrollLeft += e.deltaY;
+    }, { passive: false, capture: true });
+    document.body.appendChild(_bannerEl);
   }
 
   _bannerEl.innerHTML = '';
 
-  // ── 헤더 (항상 표시) ──
-  const header = document.createElement('div');
-  header.style.cssText = 'display:flex;align-items:center;gap:8px;flex-shrink:0;';
+  const BTN = 'display:block;width:100%;background:none;border:1.5px solid #e2e4e9;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;color:#444;font-family:sans-serif;text-align:center;box-sizing:border-box;';
+
+  // ── 접힌 상태: 펼치기 버튼만 표시 ──
+  if (_bannerCollapsed) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.textContent = '▾ 펼치기';
+    toggleBtn.style.cssText = BTN + 'width:auto;';
+    toggleBtn.addEventListener('click', () => { _bannerCollapsed = false; localStorage.setItem('heaor-banner-collapsed', false); renderCoupangBanner(); });
+    _bannerEl.appendChild(toggleBtn);
+    return;
+  }
+
+  // ── 왼쪽 컨트롤 영역 (세로 배치) ──
+  const controls = document.createElement('div');
+  controls.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;gap:6px;flex-shrink:0;padding-right:12px;border-right:1.5px solid #e2e4e9;margin-right:12px;min-width:72px;';
+
+  const label = document.createElement('div');
+  label.style.cssText = 'font-size:11px;font-weight:700;color:#888;white-space:nowrap;text-align:center;';
+  label.innerHTML = `소싱 후보 <span style="color:#0ea5e9;">${_bannerCandidates.length}개</span>`;
+  controls.appendChild(label);
+
+  if (/\/vp\/products\/\d+/.test(location.href)) {
+    const addThisBtn = document.createElement('button');
+    addThisBtn.id = 'heaor-detail-btn';
+    addThisBtn.textContent = '+ 현재 상품';
+    addThisBtn.style.cssText = BTN + 'background:#0ea5e9;border-color:#0ea5e9;color:#fff;';
+    addThisBtn.addEventListener('click', () => addCurrentProduct(addThisBtn));
+    controls.appendChild(addThisBtn);
+  }
+
+  if (_bannerCandidates.length > 0) {
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = '전체 삭제';
+    clearBtn.style.cssText = BTN;
+    clearBtn.addEventListener('click', () => {
+      const ids = _bannerCandidates.map(c => c.id);
+      _bannerCandidates.length = 0;
+      ids.forEach(id => chrome.runtime.sendMessage({ type: 'REMOVE_SOURCING_CANDIDATE', candidateId: id }));
+      renderCoupangBanner();
+    });
+    controls.appendChild(clearBtn);
+  }
 
   const toggleBtn = document.createElement('button');
-  toggleBtn.textContent = _bannerCollapsed ? '▾' : '▴';
-  toggleBtn.style.cssText = 'background:none;border:none;color:#aaa;font-size:14px;cursor:pointer;padding:0;line-height:1;flex-shrink:0;';
-  toggleBtn.addEventListener('click', () => {
-    _bannerCollapsed = !_bannerCollapsed;
-    localStorage.setItem('heaor-banner-collapsed', _bannerCollapsed);
-    renderCoupangBanner();
-  });
-  header.appendChild(toggleBtn);
+  toggleBtn.textContent = '▴ 접기';
+  toggleBtn.style.cssText = BTN;
+  toggleBtn.addEventListener('click', () => { _bannerCollapsed = true; localStorage.setItem('heaor-banner-collapsed', true); renderCoupangBanner(); });
+  controls.appendChild(toggleBtn);
 
-  const label = document.createElement('span');
-  label.textContent = '소싱 후보';
-  label.style.cssText = 'white-space:nowrap;color:#888;font-size:12px;font-weight:600;';
-  header.appendChild(label);
+  _bannerEl.appendChild(controls);
 
-  const countBadge = document.createElement('span');
-  countBadge.textContent = `${_bannerCandidates.length}개`;
-  countBadge.style.cssText = 'color:#0ea5e9;font-weight:700;font-size:12px;white-space:nowrap;';
-  header.appendChild(countBadge);
-
-  _bannerEl.appendChild(header);
-
-  if (_bannerCollapsed) return;
-
-  // ── 펼침 상태: 카드 슬라이더 + 우측 버튼 ──
+  // ── 카드 슬라이더 ──
   const slider = document.createElement('div');
-  slider.style.cssText = 'display:flex;gap:8px;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px 0;align-items:flex-start;';
+  slider.className = 'heaor-slider';
+  slider.style.cssText = 'display:flex;gap:8px;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px 0;align-items:stretch;';
+
   _bannerCandidates.forEach((c, i) => {
     const card = document.createElement('div');
     card.style.cssText = [
       'display:flex', 'flex-direction:column',
-      'width:82px', 'flex-shrink:0',
+      'width:90px', 'flex-shrink:0',
       'border-radius:8px', 'overflow:hidden',
-      'border:1.5px solid #e2e4e9', 'background:#f4f6fb',
+      'border:1.5px solid #e2e4e9', 'background:#f8f9fb',
       'position:relative', 'cursor:pointer',
     ].join(';');
 
@@ -90,18 +124,33 @@ function renderCoupangBanner() {
     thumb.src = c.thumbnailUrl || '';
     thumb.referrerPolicy = 'no-referrer';
     thumb.className = 'heaor-banner-thumb';
-    thumb.style.cssText = 'background:#e8eaee;';
+    thumb.style.cssText = 'background:#eef0f4;flex-shrink:0;';
     card.appendChild(thumb);
+
+    const info = document.createElement('div');
+    info.style.cssText = 'padding:4px 6px 5px;display:flex;flex-direction:column;flex:1;';
 
     const name = document.createElement('span');
     name.textContent = c.productName || '상품명 없음';
-    name.style.cssText = [
-      'font-size:10px', 'line-height:1.35', 'color:#333',
-      'padding:4px 6px 5px',
-      'display:-webkit-box', '-webkit-line-clamp:2',
-      '-webkit-box-orient:vertical', 'overflow:hidden',
-    ].join(';');
-    card.appendChild(name);
+    name.style.cssText = 'font-size:10px;line-height:1.35;color:#1a1a2e;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;';
+    info.appendChild(name);
+
+    const meta = document.createElement('div');
+    meta.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:1px;margin-top:auto;padding-top:4px;';
+    if (c.price) {
+      const priceEl = document.createElement('span');
+      priceEl.textContent = c.price.toLocaleString() + '원';
+      priceEl.style.cssText = 'font-size:12px;font-weight:700;color:#1a1a2e;';
+      meta.appendChild(priceEl);
+    }
+    if (c.estimatedMonthlySales > 0) {
+      const salesEl = document.createElement('span');
+      salesEl.textContent = '월 ' + c.estimatedMonthlySales.toLocaleString() + '개';
+      salesEl.style.cssText = 'font-size:12px;font-weight:700;color:#0ea5e9;';
+      meta.appendChild(salesEl);
+    }
+    info.appendChild(meta);
+    card.appendChild(info);
 
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '✕';
@@ -121,23 +170,12 @@ function renderCoupangBanner() {
 
     card.addEventListener('click', (e) => {
       if (e.target === removeBtn) return;
-      if (c.coupangUrl) window.open(c.coupangUrl, '_blank');
+      if (c.coupangUrl) chrome.runtime.sendMessage({ type: 'NAVIGATE_TAB', url: c.coupangUrl });
     });
 
     slider.appendChild(card);
   });
   _bannerEl.appendChild(slider);
-
-  const closeAll = document.createElement('button');
-  closeAll.textContent = '전체 삭제';
-  closeAll.style.cssText = 'background:none;border:none;color:#aaa;font-size:10px;cursor:pointer;padding:0;white-space:nowrap;flex-shrink:0;align-self:center;';
-  closeAll.addEventListener('click', () => {
-    const ids = _bannerCandidates.map(c => c.id);
-    _bannerCandidates.length = 0;
-    ids.forEach(id => chrome.runtime.sendMessage({ type: 'REMOVE_SOURCING_CANDIDATE', candidateId: id }));
-    renderCoupangBanner();
-  });
-  _bannerEl.appendChild(closeAll);
 }
 
 // ── CSS 주입 (1회) ─────────────────────────────────────────────────────────────
@@ -204,7 +242,12 @@ function injectStyles() {
 // ── categoryId 추출 (batch API) ────────────────────────────────────────────────
 async function fetchCategoryId(productId) {
   try {
-    const resp = await fetch(`/next-api/review/batch?productId=${productId}&viRoleCode=3`);
+    // referrer를 상품 상세 페이지로 지정해야 Akamai 봇 차단(403)을 통과함
+    const resp = await fetch(`/next-api/review/batch?productId=${productId}&viRoleCode=3`, {
+      headers: { accept: 'application/json, text/plain, */*' },
+      referrer: `https://www.coupang.com/vp/products/${productId}`,
+      credentials: 'include',
+    });
     if (!resp.ok) return null;
     const data = await resp.json();
     const id = data?.reviewable?.contents?.categoryId;
@@ -464,18 +507,93 @@ function attachAll() {
 }
 
 // ── MutationObserver: 동적 카드 대응 ─────────────────────────────────────────
+let _mutTimer = null;
 const mutObs = new MutationObserver(() => {
-  attachAll();
-  // 배너가 DOM에서 사라진 경우(SPA 이동 등) 자동 복원
-  if (_bannerCandidates.length && (!_bannerEl || !document.body.contains(_bannerEl))) {
-    _bannerEl = null;
-    renderCoupangBanner();
-  }
+  clearTimeout(_mutTimer);
+  _mutTimer = setTimeout(() => {
+    attachAll();
+    // 배너가 DOM에서 사라진 경우(SPA 이동 등) 자동 복원
+    if (_bannerCandidates.length && (!_bannerEl || !document.body.contains(_bannerEl))) {
+      _bannerEl = null;
+      renderCoupangBanner();
+    }
+  }, 100);
 });
 mutObs.observe(document.body, { childList: true, subtree: true });
 
+// ── 상품 상세 페이지 — 현재 상품 소싱 추가 ───────────────────────────────────
+async function addCurrentProduct(btn) {
+  const pidMatch = location.href.match(/\/vp\/products\/(\d+)/);
+  if (!pidMatch) return;
+  const productId = pidMatch[1];
+
+  btn.textContent = '⏳ 조회 중...';
+  btn.disabled = true;
+
+  // 상품명: document.title에서 추출
+  const productName = document.title.replace(/\s*[:|]\s*쿠팡\s*$/, '').trim();
+
+  // 가격: JSON-LD 구조화 데이터 → DOM 폴백
+  let price = null;
+  for (const ldEl of document.querySelectorAll('script[type="application/ld+json"]')) {
+    try {
+      const ld = JSON.parse(ldEl.textContent);
+      const offers = ld.offers || ld['@graph']?.find?.(n => n.offers)?.offers;
+      const p = offers?.price ?? offers?.lowPrice;
+      if (p) { price = Number(String(p).replace(/,/g, '')); break; }
+    } catch {}
+  }
+  if (!price) {
+    const priceSelectors = [
+      '[class*="total-price"] strong',
+      '[class*="prod-price"] strong',
+      '[class*="price-area"] strong',
+    ];
+    for (const sel of priceSelectors) {
+      const el = document.querySelector(sel);
+      if (el) { const m = el.textContent.match(/(\d[\d,]+)/); if (m) { const v = parseInt(m[1].replace(/,/g, '')); if (v > 0) { price = v; break; } } }
+    }
+  }
+
+  // 썸네일: og:image
+  let thumbnailUrl = document.querySelector('meta[property="og:image"]')?.content || null;
+  if (thumbnailUrl?.startsWith('//')) thumbnailUrl = 'https:' + thumbnailUrl;
+
+  // categoryId + 월판매량
+  const [categoryId, reviewResult] = await Promise.all([
+    fetchCategoryId(productId),
+    countRecent30DaysReviews(productId),
+  ]);
+
+  const candidate = {
+    id: 'cand_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    productName,
+    price,
+    thumbnailUrl,
+    categoryId: categoryId || null,
+    productId,
+    coupangUrl: location.href,
+    estimatedMonthlySales: reviewResult.count * 10,
+    status: 'pending',
+    addedAt: Date.now(),
+  };
+
+  chrome.runtime.sendMessage({ type: 'ADD_SOURCING_CANDIDATE', data: candidate }, (r) => {
+    if (r?.ok) {
+      btn.textContent = '✓ 추가됨';
+      btn.style.background = '#22c55e';
+      addToBanner(candidate);
+      setTimeout(() => { btn.textContent = '+ 현재 상품'; btn.style.background = '#0ea5e9'; btn.disabled = false; }, 2000);
+    } else {
+      btn.textContent = '+ 현재 상품';
+      btn.disabled = false;
+    }
+  });
+}
+
 injectStyles();
 attachAll();
+renderCoupangBanner();
 
 // 페이지 로드/이동 시 pending 후보 복원 → 배너 재표시 (중복 방지)
 chrome.runtime.sendMessage({ type: 'GET_PENDING_CANDIDATES' }, (candidates) => {

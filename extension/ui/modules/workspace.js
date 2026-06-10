@@ -55,6 +55,45 @@ export async function openDetailView(itemId) {
     }
   }
 
+  // 쿠팡 원본 참고 카드
+  const refCard  = document.getElementById('coupang-ref-card');
+  const refUrl   = document.getElementById('coupang-ref-url');
+  const refThumb = document.getElementById('coupang-ref-thumb');
+  const refName  = document.getElementById('coupang-ref-name');
+  const refPrice = document.getElementById('coupang-ref-price');
+  const refSales = document.getElementById('coupang-ref-sales');
+  if (refCard) {
+    if (item.coupangUrl) {
+      refUrl.href = item.coupangUrl;
+      refName.textContent = item.coupangName || item.title_kr || '';
+      if (item.coupangThumb) {
+        refThumb.src = item.coupangThumb;
+        refThumb.classList.remove('hidden');
+      } else {
+        refThumb.classList.add('hidden');
+      }
+      if (refPrice) {
+        if (item.coupangPrice != null) {
+          refPrice.textContent = Number(item.coupangPrice).toLocaleString() + '원';
+          refPrice.classList.remove('hidden');
+        } else {
+          refPrice.classList.add('hidden');
+        }
+      }
+      if (refSales) {
+        if (item.estimatedMonthlySales) {
+          refSales.textContent = '월 ' + Number(item.estimatedMonthlySales).toLocaleString() + '개 판매';
+          refSales.classList.remove('hidden');
+        } else {
+          refSales.classList.add('hidden');
+        }
+      }
+      refCard.classList.remove('hidden');
+    } else {
+      refCard.classList.add('hidden');
+    }
+  }
+
   state.activeOptionName     = null;
   state.selectedOptions      = [];
   state.optionCustomNames    = {};
@@ -80,7 +119,7 @@ export async function openDetailView(itemId) {
 
   document.querySelector('.split-layout').classList.add('has-workspace');
   const urlSection = document.getElementById('url-section');
-  if (urlSection) urlSection.classList.add('hidden');
+  if (urlSection) urlSection.classList.add('url-section-collapsed');
   const workspace = $('workspace');
   workspace.classList.remove('hidden');
   void workspace.offsetWidth;
@@ -118,7 +157,7 @@ export async function openDetailView(itemId) {
     goToStep(1);
   }
 
-  ['f-name','f-supply','f-selling','f-qty','f-material','f-option','f-category-id','f-spec','f-weight'].forEach(id => {
+  ['f-name','f-supply','f-selling','f-qty','f-material','f-option','f-category-id','f-spec','f-weight','f-tags'].forEach(id => {
     $(id).addEventListener('input', () => saveProgress());
   });
 }
@@ -132,7 +171,7 @@ export function closeDetailView() {
   workspace.classList.remove('show');
   document.querySelector('.split-layout').classList.remove('has-workspace');
   const urlSection = document.getElementById('url-section');
-  if (urlSection) urlSection.classList.remove('hidden');
+  if (urlSection) urlSection.classList.remove('url-section-collapsed');
   setTimeout(() => { if (!state.isModalOpen) workspace.classList.add('hidden'); }, 400);
   renderQueue();
 }
@@ -203,6 +242,7 @@ export function saveProgress(immediate = false) {
         Object.entries(state.optionImageMap).map(([k, v]) => [k, [...v]])
       ),
       name:       $('f-name').value,
+      yuan:       $('f-yuan').value,
       supply:     $('f-supply').value,
       selling:    $('f-selling').value,
       qty:        $('f-qty').value,
@@ -211,6 +251,7 @@ export function saveProgress(immediate = false) {
       categoryId: $('f-category-id').value,
       spec:       $('f-spec').value,
       weight:     $('f-weight').value,
+      tags:       $('f-tags').value,
     };
     saveQueue();
   };
@@ -221,6 +262,7 @@ export function saveProgress(immediate = false) {
 export async function restoreProgress(p) {
   if (!p) return false;
   if (p.name       !== undefined) $('f-name').value        = p.name;
+  if (p.yuan       !== undefined) $('f-yuan').value        = p.yuan;
   if (p.supply     !== undefined) $('f-supply').value      = p.supply;
   if (p.selling    !== undefined) $('f-selling').value     = p.selling;
   if (p.qty        !== undefined) $('f-qty').value         = p.qty;
@@ -229,6 +271,7 @@ export async function restoreProgress(p) {
   if (p.categoryId !== undefined) $('f-category-id').value = p.categoryId;
   if (p.spec       !== undefined) $('f-spec').value        = p.spec;
   if (p.weight     !== undefined) $('f-weight').value      = p.weight;
+  if (p.tags       !== undefined) $('f-tags').value        = p.tags;
 
   state.selectedOptions   = p.selectedOptions || [];
   state.optionCustomNames = { ...(p.optionCustomNames || {}) };

@@ -13,7 +13,7 @@
     color: #000000;
     padding: 28px 24px;
     margin: 0;
-    letter-spacing: 0;
+    word-spacing: 0.01px;
     line-height: 1.4;
 }
 
@@ -42,7 +42,7 @@
     text-align: center;
     color: #000000;
     margin: 0 0 24px 0;
-    letter-spacing: 0;
+    word-spacing: 0.01px;
     line-height: normal;
     font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Helvetica, sans-serif;
 }
@@ -56,12 +56,12 @@
 .info-table th,
 .info-table td {
     border: 1px solid #cecece;
-    padding: 12px 16px;
+    padding: 16px 20px;
     font-size: 18px;
     font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Helvetica, sans-serif;
-    letter-spacing: 0;
-    line-height: normal;
-    height: 48px;
+    word-spacing: 0.01px;
+    line-height: 1.5;
+    min-height: 56px;
     vertical-align: middle;
 }
 

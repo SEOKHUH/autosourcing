@@ -3,6 +3,7 @@
 
 import { $, appendGlobalLog } from './utils.js';
 import { state } from './state.js';
+import { crawlSettled } from './queue.js';
 
 let _onScrapeDone = null;
 let _updateStatus = null;
@@ -25,12 +26,15 @@ function handleSwMessage(msg) {
       appendGlobalLog(msg.text);
       break;
     case 'SCRAPE_DONE':
-      if (_onScrapeDone) _onScrapeDone(msg.result);
+      if (_onScrapeDone) _onScrapeDone(msg.result, msg.itemId);
       break;
-    case 'SCRAPE_ERROR':
+    case 'SCRAPE_ERROR': {
       appendGlobalLog('❌ 크롤링 오류: ' + msg.error);
-      if (_updateStatus) _updateStatus(state.currentItemId, 'error');
+      const errId = msg.itemId || state.currentItemId;
+      if (_updateStatus) _updateStatus(errId, 'error');
+      crawlSettled(errId);
       break;
+    }
     case 'REGISTER_LOG':
     case 'DRAFT_LOG':
       appendGlobalLog(msg.text);

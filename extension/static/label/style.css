@@ -19,7 +19,7 @@
     color: #000000;
     margin: 0 0 20px 0;
     text-align: center;
-    letter-spacing: 0;
+    word-spacing: 0.01px;
     line-height: normal;
 }
 
@@ -32,12 +32,12 @@
 .label-table th,
 .label-table td {
     border: 1px solid #cecece;
-    padding: 10px 16px;
+    padding: 16px 16px;
     font-size: 18px;
     font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Helvetica, sans-serif;
-    letter-spacing: 0;
-    line-height: normal;
-    height: 44px;
+    word-spacing: 0.01px;
+    line-height: 1.4;
+    height: 60px;
     vertical-align: middle;
 }
 

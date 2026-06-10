@@ -7,6 +7,7 @@ import { PriceCalculator } from './price_calculator.js';
 const NAME_FILTER_RE = /국경\s*간|공장\s*직접?\s*판매?|공장\s*직판|크로스\s*보더|도매가?|직접\s*판매|당일\s*발송|빠른\s*배송|무료\s*배송|특가|최저가|독점|공식\s*판매|헤오르\s*/gi;
 
 export async function fillStep1(result) {
+  $('f-qty').value  = '1개';
   $('f-name').value = '상품명 정제 중...';
 
   const matAttr = (result.attrs_translated || result.attributes || []).find(a =>
@@ -41,18 +42,12 @@ export async function fillStep1(result) {
   $('sku-hint').textContent = '';
   $('f-option').value = '';
 
-  refineProductName(result.title_kr || '').then(refined => {
-    if ($('f-name').value === '상품명 정제 중...') $('f-name').value = refined;
-  });
-}
+  // Gemini 배치에서 이미 정제된 상품명 — 규칙 필터만 추가 적용
+  const cleanedName = (result.title_kr || '').replace(NAME_FILTER_RE, '').replace(/\s+/g, ' ').trim();
+  $('f-name').value = cleanedName;
 
-export async function refineProductName(rawName) {
-  const ruleFiltered = rawName.replace(NAME_FILTER_RE, '').replace(/\s+/g, ' ').trim();
-  try {
-    const resp = await chrome.runtime.sendMessage({ type: 'REFINE_PRODUCT_NAME', name: ruleFiltered });
-    if (resp?.ok && resp.refined) return resp.refined;
-  } catch (e) {}
-  return ruleFiltered;
+  // 검색태그 채우기 (Gemini 성공 시에만 존재)
+  $('f-tags').value = (result.search_tags || []).join(', ');
 }
 
 export function onSkuChange() {
@@ -101,8 +96,23 @@ export function onSkuChange() {
 }
 
 export function updatePriceDisplay(yuan, prices) {
-  $('d-yuan').textContent = yuan ? `¥${yuan}` : '-';
+  const yuanInput = $('f-yuan');
+  if (yuanInput && yuan) yuanInput.value = yuan;
+  else if (yuanInput) yuanInput.value = '';
   $('d-cost').textContent = prices.cost_price ? `${prices.cost_price.toLocaleString()}원` : '-';
   $('f-supply').value  = prices.supply_price  || '';
   $('f-selling').value = prices.selling_price || '';
+}
+
+export function initYuanInput() {
+  const input = $('f-yuan');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const yuan = parseFloat(input.value) || 0;
+    const qty  = parseInt($('f-qty').value) || 1;
+    const prices = PriceCalculator.calculatePrices(yuan, qty);
+    $('d-cost').textContent = prices.cost_price ? `${prices.cost_price.toLocaleString()}원` : '-';
+    $('f-supply').value  = prices.supply_price  || '';
+    $('f-selling').value = prices.selling_price || '';
+  });
 }
