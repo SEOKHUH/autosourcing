@@ -1,8 +1,9 @@
 /**
- * scraper_1688.js — 1688 상품 페이지 DOM 스크래퍼 (최적화 버전)
+ * scraper_1688.js — 1688 페이지 "소싱 후보 배너" UI 담당
  *
- * 복잡한 JSON 가로채기(Interceptor)를 제거하고, 오직 화면(DOM)에 
- * 렌더링된 요소들을 기반으로 가장 직관적이고 가볍게 데이터를 긁어옵니다.
+ * ⚠️ 현재 스크래핑은 service-worker.js의 window.context JSON fetch 방식으로 처리됨.
+ *    이 파일 하단의 START_SCRAPE 리스너 + scrapeFromDOM 등 DOM 스크래핑 로직은
+ *    송신자가 없어 **미사용(죽은 코드)** 이며, 실제로 동작하는 부분은 상단 배너 UI뿐.
  */
 
 // ── 소싱 후보 배너: 1688 페이지 진입 시 pending 후보 카드 슬라이더 UI ─────────

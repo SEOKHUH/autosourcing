@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-07-06 — 월 판매량 403 수정 + 죽은 코드 문서 정정 (Claude Code)
+
+### 변경 내용
+
+**월 예상 판매량 403 버그 수정**
+- `extension/content_scripts/coupang_search.js` `countRecent30DaysReviews`: `/next-api/review` fetch에 `referrer: /vp/products/{productId}` + `credentials: 'include'` + `accept` 헤더 추가
+- 원인: Akamai 봇 차단이 referrer 없는 요청에 403 반환 → `!resp.ok → break`로 리뷰수 0 → 월 판매량 0개로 표시. 직전 `fetchCategoryId` 403과 동일 패턴
+- 동작 확인: 월 예상 판매량 정상 표시
+
+**죽은 코드 문서 정정 (문서/주석만, 코드 삭제 없음)**
+- `CLAUDE.md`: `supplier_hub.js` "미사용 스텁" → "미사용(죽은 코드)"로 정정, `service-worker.js`의 `DRAFT_SAVE`/`handleDraftSave` 경로도 죽은 코드임을 명시
+- `extension/content_scripts/scraper_1688.js` 헤더 주석: "DOM 스크래퍼" → "소싱 후보 배너 UI 담당, 하단 START_SCRAPE/scrapeFromDOM은 미사용 죽은 코드"로 수정
+- 근거: `START_SCRAPE`·`DRAFT_SAVE` 메시지 송신자가 코드베이스에 존재하지 않음(grep 확인)
+
+---
+
 ## 2026-06-10 — 모듈 문서 전체 업데이트 + CLAUDE.md 정오 (Claude Code)
 
 ### 변경 내용

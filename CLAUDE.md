@@ -7,7 +7,7 @@
 ## 기술 스택
 - **플랫폼**: Chrome Extension (Manifest V3)
 - **크롤링**: `background/service-worker.js` — 백그라운드 fetch로 1688 페이지의 `window.context` JSON을 추출·파싱 (DOM 스크래핑 아님). `scraper_1688.js`는 1688 페이지의 "소싱 후보 배너" UI만 담당하며 스크래핑 로직은 현재 미사용(죽은 코드)
-- **브라우저 자동화**: `step4.js`에서 `executeScript(world: MAIN)`으로 직접 처리 (`supplier_hub.js`는 현재 미사용 스텁)
+- **브라우저 자동화**: `step4.js`에서 `executeScript(world: MAIN)`으로 직접 처리. `supplier_hub.js`(content script)와 `service-worker.js`의 `DRAFT_SAVE`/`handleDraftSave` 경로는 과거 메시지 기반 저장 방식의 잔재로, 현재 송신자가 없어 **미사용(죽은 코드)**
 - **번역**: service-worker.js의 Gemini API (`gemini-3.1-flash-lite`) 우선 → 실패 시 `ui/modules/translator.js` (Google Translate 비공개 API) 폴백. Gemini API 키는 설정 모달에서 입력 후 `chrome.storage.local`의 `mobileSyncSettings.geminiApiKey`에 저장
 - **가격 계산**: `ui/modules/price_calculator.js`
 - **라벨/상세페이지 생성**: `ui/modules/html_renderer.js` + html2canvas
@@ -23,7 +23,7 @@ extension/
   content_scripts/
     scraper_1688.js          # 1688 페이지 "소싱 후보 배너" UI 담당 (DOM 스크래핑 로직은 죽은 코드)
     coupang_search.js        # 쿠팡 상품 목록 페이지에 돋보기 버튼 오버레이 (월판매량·카테고리 ID 조회)
-    supplier_hub.js          # 서플라이어 허브 (현재 스텁)
+    supplier_hub.js          # 서플라이어 허브 DRAFT_SAVE 핸들러 (미사용 죽은 코드 — 실제 저장은 step4.js executeScript)
   ui/
     index.html               # 메인 UI (새 탭으로 열림)
     index.css                # 스타일

@@ -267,7 +267,12 @@ async function countRecent30DaysReviews(productId) {
   while (page <= maxPages) {
     try {
       const url = `/next-api/review?productId=${productId}&page=${page}&size=30&sortBy=DATE_DESC&viRoleCode=3&ratingSummary=true&ratings=&market=`;
-      const resp = await fetch(url, { headers: { Accept: 'application/json' } });
+      // referrer를 상품 상세 페이지로 지정해야 Akamai 봇 차단(403)을 통과함 (fetchCategoryId와 동일)
+      const resp = await fetch(url, {
+        headers: { accept: 'application/json, text/plain, */*' },
+        referrer: `https://www.coupang.com/vp/products/${productId}`,
+        credentials: 'include',
+      });
       if (!resp.ok) break;
       const data = await resp.json();
       const reviews = data?.rData?.paging?.contents;

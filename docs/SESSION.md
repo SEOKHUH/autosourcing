@@ -5,9 +5,21 @@
 
 ---
 
-## 마지막 업데이트: 2026-06-10 (모듈 문서 전체 업데이트 + CLAUDE.md 정오)
+## 마지막 업데이트: 2026-07-06 (월 판매량 403 수정 + 죽은 코드 문서 정정)
 
 ## 다음 할 일 (최상단)
+
+### [완료] 월 예상 판매량 403 수정 (2026-07-06)
+- **증상**: 카테고리 ID는 정상인데 월 예상 판매량만 0개
+- **원인**: `coupang_search.js` `countRecent30DaysReviews`의 `/next-api/review` fetch가 referrer/credentials 없어 Akamai 봇 차단(403). `!resp.ok → break`로 조용히 0개 반환 (직전 카테고리 ID 403과 동일 패턴)
+- **수정**: fetch에 `referrer: /vp/products/{productId}` + `credentials: 'include'` + `accept` 헤더 추가 (`fetchCategoryId`와 동일). 콘솔 로그로 403 확인 후 수정, 동작 확인 완료
+- **후속 검토 여지**: 코드리뷰 #6 "에러 처리 침묵" — 403을 오버레이에 표시하도록 개선 가능 (보류)
+
+### [완료] 죽은 코드 문서 정정 (A안, 2026-07-06)
+- 문서↔코드 교차검증 결과 발견한 3건 정정 (코드 삭제 아닌 문서/주석만 수정)
+  - CLAUDE.md: `supplier_hub.js` "미사용 스텁" → "미사용(죽은 코드)"로 정정, `service-worker.js` `DRAFT_SAVE`/`handleDraftSave`도 죽은 코드임을 명시 (실제 저장은 step4.js executeScript MAIN)
+  - `scraper_1688.js` 헤더 주석: "DOM 스크래퍼" → "소싱 후보 배너 UI 담당, START_SCRAPE/scrapeFromDOM은 죽은 코드"로 수정
+- **미처리(B안 보류)**: 죽은 코드 실제 제거 — supplier_hub.js 삭제 + manifest 등록 해제, service-worker DRAFT_SAVE 경로 제거, scraper_1688 스크래핑 함수 제거. 회귀 위험 있어 별도 작업으로 신중히 진행 예정
 
 ### [완료] 모듈 문서 전체 업데이트 (2026-06-09)
 - **업데이트**: `queue.md` (throttle/enqueueRescrape/addToQueueFromCandidate), `scrape.md` (Gemini/폴백/가격 재시도), `workspace.md` (쿠팡 참고 카드/yuan 저장), `state.md` (sourcingCandidates/skuThumbKeys)
