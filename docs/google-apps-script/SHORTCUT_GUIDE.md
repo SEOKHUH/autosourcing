@@ -66,7 +66,7 @@
 - 설정:
   - **URL**: 아래 URL 직접 입력
     ```
-    https://script.google.com/macros/s/AKfycbxofCv4A2lA_ifdqSqCh8cNJnwag0DN1Haiz6i2ogmQ_4FJLrLfmY5oGzvst9Muxf4MQQ/exec?action=add
+    https://script.google.com/macros/s/[YOUR_DEPLOYMENT_ID]/exec?action=add
     ```
   - **메서드**: POST
   - **요청 본문**: JSON
