@@ -40,8 +40,8 @@ flowchart TB
     CS <-->|메시지| BG
 ```
 
-핵심 로직이 **로그인된 브라우저 세션 안에서** 돌아가야 했기에(1688·쿠팡의 로그인 요구와 봇 차단),
-독립 스크립트가 아니라 **확장 프로그램**으로 만들었습니다. 서플라이어 허브 등록은 실제 허브 탭 안에서
+확장 프로그램이라 **로그인된 브라우저 세션을 그대로 쓰고** 쿠팡·1688 페이지 위에서 직접 조작할 수 있습니다.
+두 사이트 모두 로그인과 봇 차단이 걸려 있어 이 점이 중요합니다. 서플라이어 허브 등록은 실제 허브 탭 안에서
 `executeScript(world: 'MAIN')`로 사이트 자체 Draft API를 호출합니다.
 
 ### 실제 사용 흐름 (수요 기반 소싱)
@@ -84,8 +84,7 @@ Google 시트 → 확장 "가져오기"** 로.
 ## 기술 스택
 
 - **플랫폼**: Chrome Extension (Manifest V3) — service worker + content scripts + ES 모듈 UI
-- **언어**: JavaScript (초기엔 **Python 스크립트**로 시작했다가, 브라우저 세션·봇 차단 제약으로
-  확장 프로그램이 필요해지며 JS로 전면 재작성)
+- **언어**: JavaScript (초기엔 **Python 스크립트**로 시작했다가, 확장 프로그램으로 방향을 바꾸며 JS로 전면 재작성)
 - **AI/API**: Gemini API(번역·정제), Tesseract.js(OCR), Google Apps Script(시트 연동)
 - **라이브러리**: html2canvas(이미지 렌더), JSZip(ZIP/XLSX 파싱) — CDN 불가라 로컬 번들
 - **저장소**: IndexedDB(이미지), chrome.storage(설정·후보)
